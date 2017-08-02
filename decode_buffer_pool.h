@@ -3,19 +3,21 @@
 #include "stdafx.h"
 #include <list>
 #include "virtural.h"
+#include <vector>
 
+class BlockBufferPool{
+	std::vector<Block> frame;
+public:
+	BlockBufferPool(int size):frame(size){}
+	int add_block_to_pool(int index,Block & block);
+};
 
-
-struct FrameBufferPool{
+class FrameBufferPool{
 	int max_size;
-	std::list<Frame *> decoded_frame;
+	std::list<BlockBufferPool> decoded_frame;
+
+public:
 	FrameBufferPool(int size):max_size(size){}
+	int add_frame_to_pool(BlockBufferPool & frame);
 };
 
-struct BlockBufferPool{
-	Frame * blocks;
-};
-
-int add_frame_to_pool(FrameBufferPool * pool,BlockBufferPool * frame);
-
-int add_block_to_pool(BlockBufferPool * block_pool,int h,int w,Block * block);

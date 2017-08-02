@@ -2,12 +2,14 @@
 
 
 ////////////////////////////ÔÝ¶¨
+/*
 struct Video{
 	static const short nFramePerSecond = 25;
 	static const short nSecond         = 30;
 	static const short nFrame          = nFramePerSecond * nSecond;
 }video;
-
+*/
+/*
 struct Frame{
 	static const short nHeight = 720;
 	static const short nWidth  = 1280;
@@ -22,9 +24,11 @@ struct Frame{
 	}
 };
 
+
 struct Block{
 	
 };
+*/
 ///////////////////////////////
 
 int yuv_read(FILE *fin, Frame &frame) {
