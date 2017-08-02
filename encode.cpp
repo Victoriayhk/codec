@@ -7,16 +7,21 @@ using namespace std;
 //auto *decode_frame_buffer=new queue<Frame>();
 
 
-int block_decode_save(Block &blk,queue<Block> &que)
+int block_decode_save(Block &blk,BlockBufferPool &blockbuffer,FrameBufferPool& framebuffer)
 { 
-
+	if(blk.pre_type==INTRA_PREDICTION)
+		blockbuffer.add_block_to_pool(block);
+	else if(blk.pre_type==INTER_PREDICTION)
+		blockbuffer.add_block_to_pool(block);
+	else
+	{}
 }
 
 int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_pool)
 {
-	BlockBufferPool  decode_buffer_Y(frame.Yblock).size());
-	BlockBufferPool  decode_buffer_U(frame.Ublock).size());
-	BlockBufferPool  decode_buffer_V(frame.Vblock).size());
+	BlockBufferPool  decode_buffer_Y;
+	BlockBufferPool  decode_buffer_U;
+	BlockBufferPool  decode_buffer_V;
 	
 	BlockBufferPool block_buffer_pool;
 
@@ -45,7 +50,7 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 	//encode U
 		Block& input_block = frame.U_que[i];	
 		predic_block_inter(input_block,block_inter,decode_buffer_U,min_block_inter);
-		predic_block_intra(input_block,block_intra,frame_pool[0],min_block_intra);
+		predic_block_intra(input_block,block_intra,frame_pool[1],min_block_intra);
 
 		if(min_block_intra>min_block_inter)
 		{
@@ -60,7 +65,7 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 	//encode V
 		Block& input_block = frame.V_que[i];	
 		predic_block_inter(input_block,block_inter,decode_buffer_V,min_block_inter);
-		predic_block_intra(input_block,block_intra,frame_pool[0],min_block_intra);
+		predic_block_intra(input_block,block_intra,frame_pool[2],min_block_intra);
 
 		if(min_block_intra>min_block_inter)
 		{
@@ -73,6 +78,7 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 			block_decode_save(block_intra, decode_buffer_V);	
 		}
 	}
-	delete block_inter;
-	delete block_intra;
+	frame_pool[0].add_frame_to_pool(decode_buffer_Y);
+	frame_pool[1].add_frame_to_pool(decode_buffer_U);
+	frame_pool[2].add_frame_to_pool(decode_buffer_V);
 }

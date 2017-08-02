@@ -8,8 +8,8 @@
 class BlockBufferPool{
 	std::vector<Block> frame;
 public:
-	BlockBufferPool(int size):frame(size){}
-	int add_block_to_pool(int index,Block & block);
+	BlockBufferPool(){}
+	int add_block_to_pool(Block & block);
 };
 
 class FrameBufferPool{

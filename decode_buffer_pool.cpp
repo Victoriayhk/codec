@@ -14,8 +14,8 @@ int FrameBufferPool::add_frame_to_pool(BlockBufferPool &frame)
 
 
 
-int BlockBufferPool::add_block_to_pool(int index,Block & block)
+int BlockBufferPool::add_block_to_pool(Block & block)
 {
-	frame[index] = block;
+	frame.push_back(block);
 	return 0;
 }
