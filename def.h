@@ -55,7 +55,7 @@ public:
 	*/
 	int block_id;
 
-	uint8_t* data;
+	vector<uint8_t> data;
 	//uint8_t* Udata;
 	//uint8_t* Vdata;
 
@@ -83,15 +83,15 @@ public:
 
 	Block()
 	{
-		data = nullptr;
+		//data = nullptr;
 	}
-	Block(int h , int w)
+	Block(int h , int w):data(h*w)
 	{
-		data = new uint8_t[h*w];
+	//	data = new uint8_t[h*w];
 	}
 	~Block()
 	{
-		delete(data);
+		//if(data) delete []data;
 	}
 };
 
@@ -140,17 +140,14 @@ public:
 	}
 };
 
-struct pkt
+class PKT
 {
 public:
 	list<Block> Ylist;
 	list<Block> Ulist;
 	list<Block> Vlist;
 
-	pkt()
-	{
-	}
-	~pkt()
+	~PKT()
 	{
 	}
 

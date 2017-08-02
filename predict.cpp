@@ -13,7 +13,8 @@ int predict_block_inter(Block &block, ModeAndDiff  &mode_result, BlockBufferPool
 }
 
 int predict_block_intra(Block &block, ModeAndDiff  &mode_result, FrameBufferPool &pool,double &score){
-	mode_result.data = block.data;
+	mode_result = block;
+
 	score = 0;
 	return 0;
 }

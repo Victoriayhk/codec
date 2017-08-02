@@ -18,7 +18,7 @@ int block_decode_save(Block &blk,BlockBufferPool &blockbuffer,FrameBufferPool& f
 	return 0;
 }
 
-int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_pool)
+int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool)
 {
 	BlockBufferPool  decode_buffer_Y;
 	BlockBufferPool  decode_buffer_U;
@@ -26,7 +26,7 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 	
 	BlockBufferPool block_buffer_pool;
 
-	
+
 	Block block_intra(para.block_height,para.block_width);
 	Block block_inter(para.block_height,para.block_width);
 	double min_block_intra;
@@ -35,6 +35,7 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 	int uvblock_num = frame.Ublock.size();
 	for(int i=0;i<block_num;++i){
 		// encode Y
+
 		Block& input_block = frame.Yblock[i];	
 		predict_block_inter(input_block,block_inter,decode_buffer_Y,min_block_inter);
 		predict_block_intra(input_block,block_intra,frame_pool[0],min_block_intra);
@@ -47,10 +48,14 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 		else
 			{
 			pkt.Ylist.push_back(block_intra);
+				
 			block_decode_save(block_intra, decode_buffer_Y,frame_pool[0]);	
+		
 		}
 	
 	}
+	
+
 	//encode U
 	for(int i=0;i<uvblock_num;++i){
 		Block& input_block = frame.Ublock[i];	
@@ -83,6 +88,7 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 			block_decode_save(block_intra, decode_buffer_V,frame_pool[2]);	
 		}
 	}
+	
 	frame_pool[0].add_frame_to_pool(decode_buffer_Y);
 	frame_pool[1].add_frame_to_pool(decode_buffer_U);
 	frame_pool[2].add_frame_to_pool(decode_buffer_V);
