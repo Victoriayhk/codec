@@ -4,6 +4,7 @@
 #include <list>
 #include "virtural.h"
 #include <vector>
+#include "def.h"
 
 class BlockBufferPool{
 	std::vector<Block> frame;

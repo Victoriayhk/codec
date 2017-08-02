@@ -1,18 +1,21 @@
+
+
+#include "stdafx.h"
+
+#include "predict.h"
 #include "encode.h"
-#include <stdint.h>
 #include <queue>
 
 using namespace std;
 
-//auto *decode_frame_buffer=new queue<Frame>();
 
 
 int block_decode_save(Block &blk,BlockBufferPool &blockbuffer,FrameBufferPool& framebuffer)
 { 
-	if(blk.pre_type==INTRA_PREDICTION)
-		blockbuffer.add_block_to_pool(block);
-	else if(blk.pre_type==INTER_PREDICTION)
-		blockbuffer.add_block_to_pool(block);
+	if(blk.pre_type==blk.INTRA_PREDICTION)
+		blockbuffer.add_block_to_pool(blk);
+	else if(blk.pre_type==blk.INTER_PREDICTION)
+		blockbuffer.add_block_to_pool(blk);
 	else
 	{}
 }
@@ -30,12 +33,13 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 	Block block_inter(para.block_height,para.block_width);
 	double min_block_intra;
 	double min_block_inter;
-
+	int block_num = frame.Yblock.size();
+	int uvblock_num = frame.Ublock.size();
 	for(int i=0;i<block_num;++i){
 		// encode Y
-		Block& input_block = frame.Y_que[i];	
-		predic_block_inter(input_block,block_inter,decode_buffer_Y,min_block_inter);
-		predic_block_intra(input_block,block_intra,frame_pool[0],min_block_intra);
+		Block& input_block = frame.Yblock[i];	
+		predict_block_inter(input_block,block_inter,decode_buffer_Y,min_block_inter);
+		predict_block_intra(input_block,block_intra,frame_pool[0],min_block_intra);
 
 		if(min_block_intra>min_block_inter)
 		{
@@ -47,10 +51,13 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 			pkt.Ylist.push_back(block_intra);
 			block_decode_save(block_intra, decode_buffer_Y);	
 		}
+	
+	}
 	//encode U
-		Block& input_block = frame.U_que[i];	
-		predic_block_inter(input_block,block_inter,decode_buffer_U,min_block_inter);
-		predic_block_intra(input_block,block_intra,frame_pool[1],min_block_intra);
+	for(int i=0;i<uvblock_num;++i){
+		Block& input_block = frame.Ublock[i];	
+		predict_block_inter(input_block,block_inter,decode_buffer_U,min_block_inter);
+		predict_block_intra(input_block,block_intra,frame_pool[1],min_block_intra);
 
 		if(min_block_intra>min_block_inter)
 		{
@@ -62,10 +69,10 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 			pkt.Ulist.push_back(block_intra);
 			block_decode_save(block_intra, decode_buffer_U);	
 		}
-	//encode V
-		Block& input_block = frame.V_que[i];	
-		predic_block_inter(input_block,block_inter,decode_buffer_V,min_block_inter);
-		predic_block_intra(input_block,block_intra,frame_pool[2],min_block_intra);
+		//encode V
+		Block& input_block = frame.Vblock[i];	
+		predict_block_inter(input_block,block_inter,decode_buffer_V,min_block_inter);
+		predict_block_intra(input_block,block_intra,frame_pool[2],min_block_intra);
 
 		if(min_block_intra>min_block_inter)
 		{

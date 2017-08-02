@@ -54,7 +54,7 @@ int write_frames_to_file(Frame *pframe, FILE *fout) {
 
 	return 0;
 }
-
+/*
 int main(int argc, char *argv[]) {
 	FILE *fin, *fout;
 	fin = fopen(argv[1], "rb");
@@ -67,3 +67,4 @@ int main(int argc, char *argv[]) {
 	}
 	write_frames_to_file(frames, fout);
 }
+*/
