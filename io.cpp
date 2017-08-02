@@ -1,3 +1,5 @@
+
+
 #include<cstdio>
 
 
@@ -30,7 +32,7 @@ struct Block{
 };
 */
 ///////////////////////////////
-
+/*
 int yuv_read(FILE *fin, Frame &frame) {
 	static short frame_cnt = 0;
 	frame_cnt ++;
@@ -54,6 +56,7 @@ int write_frames_to_file(Frame *pframe, FILE *fout) {
 
 	return 0;
 }
+*/
 /*
 int main(int argc, char *argv[]) {
 	FILE *fin, *fout;

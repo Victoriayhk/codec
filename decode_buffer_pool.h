@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stdafx.h"
+
 #include <list>
 #include "virtural.h"
 #include <vector>

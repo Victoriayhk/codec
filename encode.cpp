@@ -1,7 +1,4 @@
 
-
-#include "stdafx.h"
-
 #include "predict.h"
 #include "encode.h"
 #include <queue>
@@ -18,6 +15,7 @@ int block_decode_save(Block &blk,BlockBufferPool &blockbuffer,FrameBufferPool& f
 		blockbuffer.add_block_to_pool(blk);
 	else
 	{}
+	return 0;
 }
 
 int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_pool)
@@ -44,12 +42,12 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 		if(min_block_intra>min_block_inter)
 		{
 			pkt.Ylist.push_back(block_inter);
-			block_decode_save(block_inter, decode_buffer_Y);		
+			block_decode_save(block_inter, decode_buffer_Y,frame_pool[0]);		
 		}
 		else
 			{
 			pkt.Ylist.push_back(block_intra);
-			block_decode_save(block_intra, decode_buffer_Y);	
+			block_decode_save(block_intra, decode_buffer_Y,frame_pool[0]);	
 		}
 	
 	}
@@ -62,30 +60,32 @@ int encode(Frame &frame,AVFormat &para,pkt &pkt,vector<FrameBufferPool>  &frame_
 		if(min_block_intra>min_block_inter)
 		{
 			pkt.Ulist.push_back(block_inter);
-			block_decode_save(block_inter, decode_buffer_U);		
+			block_decode_save(block_inter, decode_buffer_U,frame_pool[1]);		
 		}
 		else
 			{
 			pkt.Ulist.push_back(block_intra);
-			block_decode_save(block_intra, decode_buffer_U);	
+			block_decode_save(block_intra, decode_buffer_U,frame_pool[1]);	
 		}
 		//encode V
-		Block& input_block = frame.Vblock[i];	
-		predict_block_inter(input_block,block_inter,decode_buffer_V,min_block_inter);
-		predict_block_intra(input_block,block_intra,frame_pool[2],min_block_intra);
+		Block& input_block1 = frame.Vblock[i];	
+		predict_block_inter(input_block1,block_inter,decode_buffer_V,min_block_inter);
+		predict_block_intra(input_block1,block_intra,frame_pool[2],min_block_intra);
 
 		if(min_block_intra>min_block_inter)
 		{
 			pkt.Vlist.push_back(block_inter);
-			block_decode_save(block_inter, decode_buffer_V);		
+			block_decode_save(block_inter, decode_buffer_V,frame_pool[2]);		
 		}
 		else
 			{
 			pkt.Vlist.push_back(block_intra);
-			block_decode_save(block_intra, decode_buffer_V);	
+			block_decode_save(block_intra, decode_buffer_V,frame_pool[2]);	
 		}
 	}
 	frame_pool[0].add_frame_to_pool(decode_buffer_Y);
 	frame_pool[1].add_frame_to_pool(decode_buffer_U);
 	frame_pool[2].add_frame_to_pool(decode_buffer_V);
+
+	return 0;
 }

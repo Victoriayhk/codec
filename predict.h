@@ -1,6 +1,5 @@
 #pragma once
 
-#include "stdafx.h"
 #include "def.h"
 #include "decode_buffer_pool.h"
 

@@ -2,7 +2,7 @@
 #define ENCODE_H
 
 
-#include "stdafx.h"
+
 #include "decode_buffer_pool.h"
 
 

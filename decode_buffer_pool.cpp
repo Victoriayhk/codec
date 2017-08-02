@@ -1,4 +1,4 @@
-#include "stdafx.h"
+
 
 #include "decode_buffer_pool.h"
 
@@ -11,7 +11,6 @@ int FrameBufferPool::add_frame_to_pool(BlockBufferPool &frame)
 
 	return 0;
 }
-
 
 
 int BlockBufferPool::add_block_to_pool(Block & block)
