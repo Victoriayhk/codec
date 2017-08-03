@@ -2,9 +2,9 @@
 
 #include "def.h"
 #include "decode_buffer_pool.h"
+#include "ResidualBlock.h"
 
-typedef Block ModeAndDiff;
 
-int predict_block_inter(Block &block, ModeAndDiff  &mode_result, BlockBufferPool &pool,double &score);
+int predict_block_inter(Block &block, ResidualBlock  &residual_block, BlockBufferPool &pool,double &score);
 
-int predict_block_intra(Block &block, ModeAndDiff  &mode_result, FrameBufferPool &pool,double &score);
+int predict_block_intra(Block &block, ResidualBlock  &residual_block, FrameBufferPool &pool,double &score);

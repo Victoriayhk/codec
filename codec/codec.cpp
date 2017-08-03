@@ -35,10 +35,11 @@ int main(int argc, char * argv[])
 	vector<FrameBufferPool> frame_pool(3,FrameBufferPool(10));
 	int errno1 = encode(frame,para,pkt,frame_pool);
 		
-	
+	/*
 	for(auto i =0; i != 8 * 8;++i){
 		printf("%d\n",(++pkt.Ulist.begin())->data[i]);
 	}
+	*/
 	int a;
 	scanf("%d",&a);
 	return 0;

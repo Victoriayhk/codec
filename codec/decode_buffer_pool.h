@@ -4,13 +4,15 @@
 #include <list>
 #include "virtural.h"
 #include <vector>
+#include <stdint.h>
 #include "def.h"
 
 class BlockBufferPool{
-	std::vector<Block> frame;
+	std::vector<std::vector<uint8_t>> frame;
 public:
-	BlockBufferPool(){}
-	int add_block_to_pool(Block & block);
+	BlockBufferPool(int height,int width):frame(height,std::vector<uint8_t>(width,128)){}
+	void setValue(int h,int w,int8_t value);
+	int8_t getValue(int h,int w);
 	int clear();
 };
 

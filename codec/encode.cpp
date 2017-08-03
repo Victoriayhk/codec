@@ -9,17 +9,20 @@ using namespace std;
 
 int block_decode_save(Block &blk,BlockBufferPool &blockbuffer,FrameBufferPool& framebuffer)
 { 
+	/*
 	if(blk.pre_type==blk.INTRA_PREDICTION)
 		blockbuffer.add_block_to_pool(blk);
 	else if(blk.pre_type==blk.INTER_PREDICTION)
 		blockbuffer.add_block_to_pool(blk);
 	else
 	{}
+	*/
 	return 0;
 }
 
 int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool)
 {
+	/*
 	BlockBufferPool  decode_buffer_Y;
 	BlockBufferPool  decode_buffer_U;
 	BlockBufferPool  decode_buffer_V;
@@ -93,5 +96,6 @@ int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_
 	decode_buffer_Y.clear();
 	decode_buffer_U.clear();
 	decode_buffer_V.clear();
+	*/
 	return 0;
 }

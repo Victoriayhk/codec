@@ -80,7 +80,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -89,6 +88,7 @@
     <ClInclude Include="encode.h" />
     <ClInclude Include="io.h" />
     <ClInclude Include="predict.h" />
+    <ClInclude Include="ResidualBlock.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="codec.cpp" />
@@ -96,6 +96,7 @@
     <ClCompile Include="encode.cpp" />
     <ClCompile Include="io.cpp" />
     <ClCompile Include="predict.cpp" />
+    <ClCompile Include="ResidualBlock.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

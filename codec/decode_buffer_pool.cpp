@@ -12,12 +12,13 @@ int FrameBufferPool::add_frame_to_pool(BlockBufferPool &frame)
 	return 0;
 }
 
-
-int BlockBufferPool::add_block_to_pool(Block & block)
-{
-	frame.push_back(block);
-	return 0;
+void BlockBufferPool::setValue(int h,int w,int8_t value){
+	frame[h][w] = value;
 }
+int8_t BlockBufferPool::getValue(int h,int w){
+	return frame[h][w];
+}
+
 
 int BlockBufferPool::clear(){
 	frame.clear();
