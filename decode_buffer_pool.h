@@ -11,6 +11,7 @@ class BlockBufferPool{
 public:
 	BlockBufferPool(){}
 	int add_block_to_pool(Block & block);
+	int clear();
 };
 
 class FrameBufferPool{

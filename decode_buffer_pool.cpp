@@ -18,3 +18,8 @@ int BlockBufferPool::add_block_to_pool(Block & block)
 	frame.push_back(block);
 	return 0;
 }
+
+int BlockBufferPool::clear(){
+	frame.clear();
+	return 0;
+}

@@ -23,8 +23,6 @@ int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_
 	BlockBufferPool  decode_buffer_Y;
 	BlockBufferPool  decode_buffer_U;
 	BlockBufferPool  decode_buffer_V;
-	
-	BlockBufferPool block_buffer_pool;
 
 
 	Block block_intra(para.block_height,para.block_width);
@@ -92,6 +90,8 @@ int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_
 	frame_pool[0].add_frame_to_pool(decode_buffer_Y);
 	frame_pool[1].add_frame_to_pool(decode_buffer_U);
 	frame_pool[2].add_frame_to_pool(decode_buffer_V);
-
+	decode_buffer_Y.clear();
+	decode_buffer_U.clear();
+	decode_buffer_V.clear();
 	return 0;
 }
