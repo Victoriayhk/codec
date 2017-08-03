@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <stdint.h>
-
+#include "def.h"
 class Tree;
 class Node{
 	/**
@@ -107,11 +107,8 @@ public:
 	/**
 	*  宏块类型
 	*/
-	enum{
-		Y,
-		U,
-		V,
-	}block_type;
+
+	Block::BlockType block_type;
 
 	/**
 	* 子块划分树

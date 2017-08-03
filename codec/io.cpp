@@ -21,12 +21,15 @@ inline Block make_block(uint8_t *stream, int start_i, int start_j, AVFormat & pa
 	Block block;
 	if (channel == 'Y') {  // Y通道, 大小为para.block_height * para.block_width
 		block.data.resize(para.block_height * para.block_width, 0);
+		block.block_type = Block::Y;
 		int end_i = min(start_i + para.block_height, para.height);
 		int real_width = min(start_j + para.block_width, para.width) - start_j;
 		for (int i = start_i; i < end_i; i++) {
 			memcpy(&block.data[(i-start_i) * para.block_width], &stream[i*para.width + start_j], sizeof(uint8_t)*real_width);
 		}
 	} else {				// U/V通道, 大小只有Y的一半
+		if(channel == 'U') block.block_type = Block::U;
+		else block.block_type = Block::V;
 		block.data.resize(para.block_height * para.block_width/4, 0);
 		int end_i = min(start_i + para.block_height/2, para.height/2);
 		int real_width = min(start_j + para.block_width/2, para.width/2) - start_j;

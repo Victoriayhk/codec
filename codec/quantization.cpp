@@ -19,11 +19,11 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 	int width = avFormat.block_width;
 	int height = avFormat.block_height;
 
-	if(block.block_type == block.Y)
+	if(block.block_type == Block::Y)
 	{
 		quantization_num = avFormat.quantizationY;
 	}
-	else if(block.block_type == block.U)
+	else if(block.block_type == Block::U)
 	{
 		quantization_num = avFormat.quantizationU;
 		width /= 2;
@@ -56,11 +56,11 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 	int width = avFormat.block_width;
 	int height = avFormat.block_height;
 
-	if(block.block_type == block.Y)
+	if(block.block_type == Block::Y)
 	{
 		quantization_num = avFormat.quantizationY;
 	}
-	else if(block.block_type == block.U)
+	else if(block.block_type == Block::U)
 	{
 		quantization_num = avFormat.quantizationU;
 		width /= 2;

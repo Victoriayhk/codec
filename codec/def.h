@@ -73,7 +73,7 @@ public:
 	/**
 	*  ºê¿éÀàĞÍ
 	*/
-	enum{
+	enum BlockType{
 		Y,
 		U,
 		V,
