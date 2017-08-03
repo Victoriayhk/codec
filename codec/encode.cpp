@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+
 #include "predict.h"
 #include "encode.h"
 #include <queue>
@@ -19,9 +19,33 @@ int block_decode_save(Block &blk,BlockBufferPool &blockbuffer,FrameBufferPool& f
 	*/
 	return 0;
 }
+inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
 
-int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool)
-{
+
+	return 0;
+}
+inline int encode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,AVFormat &para,FrameBufferPool & frame_pool){
+	BlockBufferPool  decode_buffer(para.height,para.width);
+	
+	for(int i=0;i<blocks.size();++i){
+		ResidualBlock residual_block(para.block_height,para.block_width);
+		encode_one_block(blocks[i],residual_block,para,decode_buffer,frame_pool);
+		//decode_one_block(blocks[i],residual_block,para,decode_buffer,frame_pool);
+	}
+	frame_pool.add_frame_to_pool(decode_buffer);
+	return 0;
+
+}
+int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool){
+	encode_one_component(frame.Yblock,pkt.Ylist,para,frame_pool[0]);
+	encode_one_component(frame.Ublock,pkt.Ulist,para,frame_pool[0]);
+	encode_one_component(frame.Vblock,pkt.Vlist,para,frame_pool[0]);
+	return 0;
+}
+
+
+//int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool)
+//{
 	/*
 	BlockBufferPool  decode_buffer_Y;
 	BlockBufferPool  decode_buffer_U;
@@ -97,5 +121,5 @@ int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_
 	decode_buffer_U.clear();
 	decode_buffer_V.clear();
 	*/
-	return 0;
-}
+//	return 0;
+//}

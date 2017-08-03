@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+
 #include "quantization.h"
 #include <iostream>
 #include <math.h>
