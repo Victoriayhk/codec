@@ -3,7 +3,7 @@
 
 
 
-ResidualBlock::ResidualBlock(int height , int width):tree(0,0,height,width),data(height,std::vector<int16_t>(width,0)){}
+ResidualBlock::ResidualBlock(int height , int width):tree(0,0,height,width),data(width * height){}
 
 
 Tree::Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w):data(nullptr),

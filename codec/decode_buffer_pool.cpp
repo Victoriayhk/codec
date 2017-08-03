@@ -1,4 +1,4 @@
-
+#include "StdAfx.h"
 
 #include "decode_buffer_pool.h"
 

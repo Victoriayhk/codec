@@ -1,4 +1,4 @@
-
+#include "StdAfx.h"
 #include "predict.h"
 #include "encode.h"
 #include <queue>

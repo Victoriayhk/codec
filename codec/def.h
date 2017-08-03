@@ -6,7 +6,11 @@
 
 using namespace std;
 
-typedef unsigned char uint8_t;
+typedef unsigned char			uint8_t;
+//typedef char					int8_t;
+//typedef short					int16_t;
+typedef unsigned short			uint16_t;
+
 //#define INTER_PREDICTION 1;
 //#define INTRA_PREDICTION 2;
 class AVFormat	//视频基本信息以及视频编码各项参数
@@ -40,6 +44,13 @@ public:
 	*/
 	int frame_id;
 
+	/**
+	*  量化时使用的数值
+	*/
+	double quantizationY;
+	double quantizationU;
+	double quantizationV;
+
 	//视频编码各项参数
 	AVFormat()
 	{
@@ -60,32 +71,20 @@ public:
 	//uint8_t* Vdata;
 
 	/**
-	*  宏块采用的预测方法
-	*  INTER_PREDICTION：帧间预测
-	*  INTRA_PREDICTION：帧内预测
+	*  宏块类型
 	*/
-	//int pre_type;
-	enum {
-		NONE,
-		INTER_PREDICTION,
-		INTRA_PREDICTION,
-	}pre_type;
-
-	/**
-	*  帧间预测的运动矢量
-	*/
-	int mv[2];
-
-	/**
-	*  帧内预测的方法
-	*/
-	int prediction;
+	enum{
+		Y,
+		U,
+		V,
+	}block_type;
 
 	Block()
 	{
 		//data = nullptr;
 	}
-	Block(int h , int w):data(h*w)
+	Block(int h , int w):
+		data(h*w)
 	{
 	//	data = new uint8_t[h*w];
 	}
@@ -140,18 +139,18 @@ public:
 	}
 };
 
-class PKT
-{
-public:
-	list<Block> Ylist;
-	list<Block> Ulist;
-	list<Block> Vlist;
-
-	~PKT()
-	{
-	}
-
-	//Block *Yblock;
-	//Block *Ublock;
-	//Block *Vblock;
-};
+//class PKT
+//{
+//public:
+//	list<Block> Ylist;
+//	list<Block> Ulist;
+//	list<Block> Vlist;
+//
+//	~PKT()
+//	{
+//	}
+//
+//	//Block *Yblock;
+//	//Block *Ublock;
+//	//Block *Vblock;
+//};

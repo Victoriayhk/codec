@@ -1,3 +1,4 @@
+#include "StdAfx.h"
 #include<cstdio>
 #include<vector>
 #include<cstring>

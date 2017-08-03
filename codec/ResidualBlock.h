@@ -94,14 +94,25 @@ class ResidualBlock
 	/**
 	*  宏块id
 	*/
+public:
 	int block_id;
 
-	std::vector<std::vector<int16_t>> data;
+	std::vector<int16_t> data;
 
 	/**
 	* 矩阵序列化顺序
 	*/
 	int order;
+
+	/**
+	*  宏块类型
+	*/
+	enum{
+		Y,
+		U,
+		V,
+	}block_type;
+
 	/**
 	* 子块划分树
 	*/
@@ -116,7 +127,7 @@ public:
 	ResidualBlock(int height , int width);
 };
 
-class NewPKT
+class PKT
 {
 public:
 	std::vector<ResidualBlock> Ylist;
