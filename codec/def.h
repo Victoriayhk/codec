@@ -13,6 +13,33 @@ typedef unsigned short			uint16_t;
 
 //#define INTER_PREDICTION 1;
 //#define INTRA_PREDICTION 2;
+class Block
+{
+public:
+	/**
+	*  宏块id
+	*/
+	int block_id;
+
+	vector<uint8_t> data;
+	//uint8_t* Udata;
+	//uint8_t* Vdata;
+
+	/**
+	*  宏块类型
+	*/
+	enum{
+		Y,
+		U,
+		V,
+	}block_type;
+
+public:
+	Block();
+	Block(int h , int w);
+	~Block();
+};
+
 class AVFormat	//视频基本信息以及视频编码各项参数
 {
 	/**
@@ -52,46 +79,12 @@ public:
 	double quantizationV;
 
 	//视频编码各项参数
-	AVFormat()
-	{
-		video = nullptr;
-	}
-};
-
-struct Block
-{
 public:
-	/**
-	*  宏块id
-	*/
-	int block_id;
+	AVFormat();
+	~AVFormat();
 
-	vector<uint8_t> data;
-	//uint8_t* Udata;
-	//uint8_t* Vdata;
+	void getBlockSize(Block block, int& height, int& width);
 
-	/**
-	*  宏块类型
-	*/
-	enum{
-		Y,
-		U,
-		V,
-	}block_type;
-
-	Block()
-	{
-		//data = nullptr;
-	}
-	Block(int h , int w):
-		data(h*w)
-	{
-	//	data = new uint8_t[h*w];
-	}
-	~Block()
-	{
-		//if(data) delete []data;
-	}
 };
 
 struct Frame	//视频帧信息
@@ -125,18 +118,15 @@ public:
 	//Block *Yblock;
 	//Block *Ublock;
 	//Block *Vblock;
-	Frame()
-	{
-	}
+public:
+	Frame();
 	//Frame(int h, int w , int block_h, int block_w)
 	//{
 	//	Yblock.resize(h*w/block_h/block_w, nullptr);
 	//	Ublock.resize(h*w/block_h/block_w/4,nullptr);
 	//	Vblock.resize(h*w/block_h/block_w/4,nullptr);
 	//}
-	~Frame()
-	{
-	}
+	~Frame();
 };
 
 //class PKT
