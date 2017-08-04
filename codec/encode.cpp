@@ -100,13 +100,11 @@ inline int encode_one_component(vector<Block> & blocks, std::vector<ResidualBloc
 	BlockBufferPool   * decode_buffer = new BlockBufferPool(para.height,para.width);
 	int block_height,block_width;
 	blocks[0].getBlockSize(para,block_height,block_width);
-	ResidualBlock residual_block(block_height,block_width);
 
 	for(int i=0;i<blocks.size();++i){
 		
-		encode_one_block(blocks[i],residual_block,para,*decode_buffer,frame_pool);
-
-		residual_blocks.push_back(residual_block);
+		encode_one_block(blocks[i],residual_blocks[i],para,*decode_buffer,frame_pool);
+		
 	}
 	frame_pool.add_frame_to_pool(decode_buffer);
 	return 0;
@@ -114,8 +112,8 @@ inline int encode_one_component(vector<Block> & blocks, std::vector<ResidualBloc
 }
 int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool){
 	encode_one_component(frame.Yblock,pkt.Ylist,para,frame_pool[0]);
-	encode_one_component(frame.Ublock,pkt.Ulist,para,frame_pool[0]);
-	encode_one_component(frame.Vblock,pkt.Vlist,para,frame_pool[0]);
+	encode_one_component(frame.Ublock,pkt.Ulist,para,frame_pool[1]);
+	encode_one_component(frame.Vblock,pkt.Vlist,para,frame_pool[2]);
 	return 0;
 }
 
