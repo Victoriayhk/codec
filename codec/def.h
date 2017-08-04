@@ -13,6 +13,9 @@ typedef unsigned short			uint16_t;
 
 //#define INTER_PREDICTION 1;
 //#define INTRA_PREDICTION 2;
+
+
+class AVFormat;
 class Block
 {
 public:
@@ -37,6 +40,9 @@ public:
 public:
 	Block();
 	Block(int h , int w);
+	void getBlockSize(AVFormat &para,int &height, int &width);
+
+	void print(AVFormat &para);
 	~Block();
 };
 

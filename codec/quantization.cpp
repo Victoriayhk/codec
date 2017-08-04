@@ -46,6 +46,7 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 			block.data[i + width * j] = (int16_t)tmp;
 		}
 	}
+	return 0;
 }
 
 int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFormat avFormat)
@@ -83,4 +84,5 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 			block.data[i + width * j] *= quantization_num;
 		}
 	}
+	return 0;
 }
