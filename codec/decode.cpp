@@ -5,8 +5,9 @@
 
 
 inline int decode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
-
-	Reverse_quantization(0 ,0 ,64 ,64 , residual_block , para);
+	int h,w;
+	residual_block.getBlockSize(para,h,w);
+	Reverse_quantization(0 ,0 ,h-1 ,w-1 , residual_block , para);
 
 
 	block.block_id = residual_block.block_id;

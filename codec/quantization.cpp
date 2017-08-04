@@ -79,6 +79,7 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 	{
 		for(int i = f_x; i <= l_x ; ++i)
 		{
+
 			block.data[i + width * j] *= quantization_num;
 		}
 	}

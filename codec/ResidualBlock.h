@@ -121,7 +121,13 @@ public:
 	* height ¸ß¶È
 	* width ¿í¶È
 	*/
+	ResidualBlock();
+	ResidualBlock(int );
 	ResidualBlock(int height , int width);
+	void getBlockSize(AVFormat &, int&, int&);
+
+	int to_stream(unsigned char *stream);
+	int from_stream(unsigned char *stream, int block_size);
 };
 
 class PKT
@@ -130,4 +136,7 @@ public:
 	std::vector<ResidualBlock> Ylist;
 	std::vector<ResidualBlock> Ulist;
 	std::vector<ResidualBlock> Vlist;
+
+	int to_stream(unsigned char *stream);
+	int from_stream(unsigned char *stream, AVFormat &para);
 };

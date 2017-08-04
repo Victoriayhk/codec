@@ -47,6 +47,7 @@ class AVFormat	//视频基本信息以及视频编码各项参数
 	*/
 public:
 	FILE* video;
+	FILE* out_video;
 	char file_name[100];
 	/**
 	*  视频的高度与宽度

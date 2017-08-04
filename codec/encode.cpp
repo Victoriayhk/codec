@@ -30,7 +30,9 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 	//predict_block_inter(input_block,block_inter,decode_buffer_Y,min_block_inter);
 	//predict_block_intra(input_block,block_intra,frame_pool[0],min_block_intra);
 //	printf("%d\n",residual_block.data[0]);
-	quantization(0 ,0 ,7 ,7 , residual_block , para);
+	int h,w;
+	para.getBlockSize(block,h,w);
+	quantization(0 ,0 ,h-1 ,w-1 , residual_block , para);
 //	printf("%d\n",residual_block.data[0]);
 	return 0;
 }

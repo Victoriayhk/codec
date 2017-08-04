@@ -5,3 +5,4 @@
 
 //int write_frames_to_file(Frame *pframe, FILE *fout);
 int yuv_read(AVFormat & para, Frame &frame);
+int yuv_write(AVFormat & para, Frame &frame);
