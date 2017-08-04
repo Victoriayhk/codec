@@ -36,7 +36,7 @@ double calc_coef(int,int,int,int,Block & block,Block & block_another){
 }
 double intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,Block & buffer_block,AVFormat & para,double & min_score){
 	int pattern_num = 2;
-	int min_score = DBL_MAX;
+	//int min_score = DBL_MAX;
 	int best_pattern = 0;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	double score = min_score;
@@ -68,4 +68,13 @@ double search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &
 	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score);
 	inter_predict(block,residual_block,tree,frame_pool,buffer_block,para,score);
 	return score;
+}
+
+int re_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para){
+	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
+	if(tree.data->pre_type == Node::INTRA_PREDICTION){
+		Pattern::re_pattern(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,tree.data->prediction,para);
+	}else{
+	}
+
 }

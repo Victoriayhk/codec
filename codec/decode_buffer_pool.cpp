@@ -21,6 +21,10 @@ int8_t BlockBufferPool::getValue(int h,int w){
 	return frame[h * width + w];
 }
 
+void BlockBufferPool::set_block(Block & block,int tlh, int tlw, int brh, int brw){
+	//TO DO
+}
+
 
 int BlockBufferPool::clear(){
 	frame.clear();

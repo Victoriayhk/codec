@@ -11,3 +11,6 @@
 void Pattern::pattern(Block&,ResidualBlock &,int,int,int,int,BlockBufferPool&,int pattern_type,AVFormat &para){
 
 }
+
+void Pattern::re_pattern(Block&,ResidualBlock &,int,int,int,int,BlockBufferPool&,int pattern_type,AVFormat &para){
+}

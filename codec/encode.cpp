@@ -10,68 +10,6 @@ using namespace std;
 
 
 
-
-double dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool) {
-	
-	static map<int,Node> dp;
-	
-	double score0 = DBL_MAX, score1 = DBL_MAX, score2 = DBL_MAX;
-
-
-	//int predict_inter(Block &block, ResidualBlock  &residual_block, BlockBufferPool &pool,double &score);
-	
-	
-	//Node node;
-	//int pattern;
-	//intra_predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,para,score0,pattern);
-	//node.pre_type = Node::INTRA_PREDICTION;
-	//node.prediction = pattern;
-
-
-	//inter_predict
-	predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,para,score0,pattern);
-
-	quantization(tph,tpw, rbh, rbw , residual_block , para);
-
-
-
-	Reverse_quantization(tph,tpw, rbh, rbw , residual_block , para);
-	re_predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,para,score0,pattern);
-	//Pattern::re_pattern(buffer_block,residual_block,tph,tpw,rbh,rbw,block_buffer_pool,i,para);
-
-	double score = compute_coef(block,buffer_block,tph,tpw, rbh, rbw);
-	
-	return score;
-
-
-
-
-	/*
-	if (w > 8) {
-		double score1 = dp_encode(block, residual_block, start_r, start_l, h, w/2, block_buffer_pool, frame_pool) + 
-						dp_encode(block, residual_block, start_r, start_l + w/2, h, w/2, block_buffer_pool, frame_pool);
-	}
-
-	if (h >= 8) {
-		double score2 = dp_encode(block, residual_block, start_r, start_l, h/2, w, block_buffer_pool, frame_pool) + 
-						dp_encode(block, residual_block, start_r + h/2, start_l, h/2, w, block_buffer_pool, frame_pool);
-	}
-
-	*/
-	/*if (score0 <= score1 && score0 <= score2) {
-		decode(node,residual_block,block_buffer_pool)
-		leaf_vector.push_back(Node());
-		method_vector.push_back(0);
-
-	} else if (score1 <= score2) {
-		method_vector.push_back(1);
-	} else {
-		method_vector.push_back(2);
-	}*/
-	
-
-}
-
 inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
 
 	residual_block.block_id = block.block_id;
@@ -84,7 +22,6 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 		residual_block.data[i] = block.data[i];
 	}
 
-	dp_encode_one_block(block, residual_block, residual_block.tree, block_buffer_pool, frame_pool);
 
 	// dp_inter_predict_prepare();
 	//dp_encode(block, residual_block, 0, 0, h, w, block_buffer_pool, frame_pool);
