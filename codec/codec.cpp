@@ -33,16 +33,18 @@ int main(int argc, char * argv[])
 
 
 	yuv_read(para,frame);
-
+	/*
 	frame.Yblock[0].print(para);
 	printf("\n");
-	/*
+	
 	frame.Ublock[0].print(para);
 	printf("\n");
 	frame.Vblock[0].print(para);
-	*/
+	
 	printf("\n");
-	/*
+	*/
+	//printf("a\n");
+	
 	vector<FrameBufferPool> frame_pool(3,FrameBufferPool(10));
 
 
@@ -70,7 +72,7 @@ int main(int argc, char * argv[])
 	
 	int result = yuv_write(para, frame1);
 
-	fclose(para.out_video);	*/
+	fclose(para.out_video);	
 	int a;
 	scanf("%d",&a);
 

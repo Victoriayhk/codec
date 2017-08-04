@@ -43,7 +43,7 @@ void Block::print(AVFormat &para){
 	getBlockSize(para,h,w);
 	for(int i = 0; i < h; ++i){
 		for(int j = 0; j < w; ++j){
-			printf("%d ",data[i * h + w]);
+			printf("%d ",data[i * w + j]);
 		}
 		printf("\n");
 	}

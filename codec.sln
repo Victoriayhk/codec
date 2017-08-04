@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "codec", "codec\codec.vcxproj", "{82671648-0EF4-436E-8745-3B3E673004A4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "codec", "codec\codec.vcxproj", "{65361D81-92C2-49D5-AD25-98D2527F5AFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,10 +9,10 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{82671648-0EF4-436E-8745-3B3E673004A4}.Debug|Win32.ActiveCfg = Debug|Win32
-		{82671648-0EF4-436E-8745-3B3E673004A4}.Debug|Win32.Build.0 = Debug|Win32
-		{82671648-0EF4-436E-8745-3B3E673004A4}.Release|Win32.ActiveCfg = Release|Win32
-		{82671648-0EF4-436E-8745-3B3E673004A4}.Release|Win32.Build.0 = Release|Win32
+		{65361D81-92C2-49D5-AD25-98D2527F5AFA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{65361D81-92C2-49D5-AD25-98D2527F5AFA}.Debug|Win32.Build.0 = Debug|Win32
+		{65361D81-92C2-49D5-AD25-98D2527F5AFA}.Release|Win32.ActiveCfg = Release|Win32
+		{65361D81-92C2-49D5-AD25-98D2527F5AFA}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

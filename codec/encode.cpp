@@ -27,25 +27,21 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 	for(int i = 0; i < block.data.size(); ++i){
 		residual_block.data[i] = block.data[i];
 	}
-	//predict_block_inter(input_block,block_inter,decode_buffer_Y,min_block_inter);
-	//predict_block_intra(input_block,block_intra,frame_pool[0],min_block_intra);
-//	printf("%d\n",residual_block.data[0]);
+
 	int h,w;
 	para.getBlockSize(block,h,w);
 	quantization(0 ,0 ,h-1 ,w-1 , residual_block , para);
-//	printf("%d\n",residual_block.data[0]);
+
 	return 0;
 }
 inline int encode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,AVFormat &para,FrameBufferPool & frame_pool){
 	BlockBufferPool  decode_buffer(para.height,para.width);
-	//ResidualBlock residual_block(para.block_height,para.block_width);
+
 	for(int i=0;i<blocks.size();++i){
 		ResidualBlock residual_block(para.block_height,para.block_width);
 		encode_one_block(blocks[i],residual_block,para,decode_buffer,frame_pool);
-		//decode_one_block(blocks[i],residual_block,para,decode_buffer,frame_pool);
 
 		residual_blocks.push_back(residual_block);
-		//residual_block.data.clear();
 	}
 	frame_pool.add_frame_to_pool(decode_buffer);
 	return 0;
