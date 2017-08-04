@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <iostream>
 #include "huffman.h"
+#include<bitset>
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -17,6 +19,8 @@
 #else
 #include <netinet/in.h>
 #endif
+
+using namespace std;
 
 typedef struct huffman_node_tag
 {
@@ -974,6 +978,7 @@ int huffman_encode_memory(const unsigned char *bufin,
 	int rc;
 	unsigned int symbol_count;
 	buf_cache cache;
+	cache.cache = nullptr;
 
 	/* Ensure the arguments are valid. */
 	if(!pbufout || !pbufoutlen)
@@ -1051,4 +1056,242 @@ int huffman_decode_memory(const unsigned char *bufin,
 	*pbufout = buf;
 	*pbufoutlen = bufcur;
 	return 0;
+}
+
+int entropy_coding_slice(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream)
+{
+	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
+	int sign_size = (b_size + 3)*0.25;
+	//uint8_t* memory = (uint8_t*)malloc((l_x-f_x) * (l_y-f_y) * sizeof(uint8_t) * 2);
+	*stream =(uint8_t*)malloc(sizeof(uint8_t) *(b_size + sign_size));
+	uint8_t* memory = *stream;
+
+	/*bitset<1> sign;*/
+	//uint8_t* num_memory =  (uint8_t*)malloc((l_x-f_x) * (l_y-f_y) * sizeof(uint8_t));
+
+	//stream = (uint8_t *)malloc((l_x-f_x) * (l_y-f_y) * sizeof(uint8_t) * 2);
+
+	uint8_t* sign_flag = memory;
+	uint8_t* num_flag = memory + b_size * sizeof(uint8_t);
+
+	//int16_t* p = rBlock.data.data();
+	//bitset<8> sign_group(positive);
+	uint8_t sign_group = 0x0;
+	int sign_num = 0;
+	int width;
+	int height;
+	rBlock.getBlockSize(para,height,width);
+
+	//p += f_y * width + f_x;
+	//if(*p>=0)
+	//	*sign_flag = positive;
+	//else
+	//	*sign_flag = negative;
+
+	for(int i = f_y;i<l_y + 1;++i)
+	{
+		for(int j =f_x;j<l_x + 1;++j)
+		{
+			int temp = rBlock.data[i*width + j];
+			if(temp>=0)
+			{
+				//bitset<1> sign(positive);
+				sign_group = sign_group<<1;
+				//*sign_flag++ = (uint8_t)positive;
+			}
+			else
+			{
+				//bitset<1> sign(negative);
+				sign_group = sign_group<<1;
+				sign_group |= 0x01;
+				//*sign_flag++ = (uint8_t)negative;
+				temp = -rBlock.data[i*width + j];
+			}
+			++sign_num;
+			if(sign_num>=8)
+			{
+				sign_num = 0;
+				*sign_flag++ = sign_group;
+				sign_group = 0x00;
+			}
+
+			*num_flag++ = temp;
+
+			//sign_flag++;
+			//num_flag++;
+			//p++;
+		}
+	}
+	if(sign_num!=0)
+	{
+		*sign_flag = sign_group;
+		sign_num = sign_num<<(8-sign_num);
+	}
+
+	//uint8_t* p2 = memory;
+	//for(int i = 0;i<8;++i)
+	//{
+	//	for(int j=0;j<8;++j)
+	//	{
+	//		cout<<(int)(*p2)<<" ";
+
+	//		++p2;
+	//	}
+	//	cout<<endl;
+	//}
+	//cout<<endl;
+
+	//for(int i = 0;i<8;++i)
+	//{
+	//	for(int j=0;j<8;++j)
+	//	{
+	//		cout<<(int)(*p2)<<" ";
+	//		++p2;
+	//	}
+	//	cout<<endl;
+	//}
+	//cout<<endl;
+
+	unsigned int out_length;
+	unsigned int out_length2;
+
+	int buff_length = huffman_encode_memory(memory, b_size * sizeof(uint8_t) * 2, stream, &out_length);
+	//huffman_decode_memory((*stream),out_length,&sign_flag,&out_length2);
+
+	return out_length;
+}
+
+void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlock, int width)
+{
+	int y = num / (l_x - f_x + 1);
+	int x = num % (l_x - f_x + 1);
+	if(y>l_y-f_y) return;
+	else if(y==l_y-l_x&&x>l_x-f_x) return;
+
+	rBlock.data[x+ y*width] = -rBlock.data[x+ y*width];
+}
+
+int entropy_decode_slice(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length)
+{
+	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
+	int sign_size = (b_size + 3) *0.25;
+
+	uint8_t* sign_flag = (uint8_t *)malloc(sizeof(uint8_t) * (b_size + sign_size));
+	uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
+	//uint8_t* p = sign_flag;
+	unsigned int out_length;
+
+	huffman_decode_memory(stream,buff_length,&sign_flag,&out_length);
+	uint8_t* p = sign_flag;
+
+	int width;
+	int height;
+	rBlock.getBlockSize(para,height,width);
+
+	bool flag = 0;
+
+	//for(int i = 0;i<8;++i)
+	//{
+	//	for(int j=0;j<8;++j)
+	//	{
+	//		cout<<(int)(*p)<<" ";
+
+	//		++p;
+	//	}
+	//	cout<<endl;
+	//}
+	//cout<<endl;
+
+	//for(int i = 0;i<8;++i)
+	//{
+	//	for(int j=0;j<8;++j)
+	//	{
+	//		cout<<(int)(*p)<<" ";
+	//		++p;
+	//	}
+	//	cout<<endl;
+	//}
+	//cout<<endl;
+
+	p = sign_flag + b_size * sizeof(uint8_t);
+
+	//rBlock.data[0] = ;
+	for(int i = f_y;i<l_y +1;++i)
+	{
+		for(int j = f_x;j<l_x +1;++j)
+		{
+			rBlock.data[i*width + j] = *p;
+
+			//int16_t sign;
+			//if(*p == positive) sign = 1;
+			//else sign = -1;
+			//rBlock.data[i*width + j] *= sign;
+
+			++p;
+		}
+	}
+	
+	p = sign_flag;
+	uint8_t temp;
+	for(int i =0;i<sign_size;++i)
+	{
+		temp = *p++;
+		bitset<8> b_temp(temp); 
+		for(int j=7;j>=0;--j)
+		{
+			if(b_temp[j] == 1)
+			{
+				reverse_data(f_x,f_y,l_x,l_y,i*8 + 7 - j,rBlock,width);
+			}
+		}
+	}
+
+	return 0;
+}
+
+void entropy_test()
+{
+	AVFormat para;
+	para.block_width = 16;
+	para.block_height = 16;
+	ResidualBlock rblock(16,16);
+	rblock.block_type = Block::Y;
+
+
+	for(int i = 0;i<16;++i)
+	{
+		for(int j=0;j<16;++j)
+		{
+			int flag = 1;
+			if(i%2 == 0) flag = -1;
+			rblock.data[i* 8 + j] = (i+j)*flag;
+		}
+	}
+
+	for(int i = 0;i<16;++i)
+	{
+		for(int j=0;j<16;++j)
+		{
+			cout<<rblock.data[i*8+j]<<" ";
+		}
+		cout<<endl;
+	}
+	cout<<endl;
+
+	int f_x = 0,f_y = 0,l_x = 15,l_y = 15;
+	cin>>f_x>>f_y>>l_x>>l_y;
+	uint8_t* stream = nullptr;
+
+	int len = entropy_coding_slice(f_x,f_y,l_x,l_y,rblock,para,&stream);
+	entropy_decode_slice(f_x,f_y,l_x,l_y,rblock,para,stream,len);
+
+	for(int i = 0;i<16;++i)
+	{
+		for(int j=0;j<16;++j)
+		{
+			cout<<rblock.data[i*16+j]<<" ";
+		}
+		cout<<endl;
+	}
+	cout<<endl;
 }

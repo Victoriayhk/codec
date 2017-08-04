@@ -11,6 +11,8 @@
 
 int main(int argc, char * argv[])
 {
+	entropy_test();
+	return 0;
 	Frame frame;
 
 	AVFormat para;

@@ -3,6 +3,7 @@
 
 #include <list>
 #include <vector>
+//#include "ResidualBlock.h"
 
 using namespace std;
 
@@ -90,7 +91,8 @@ public:
 	AVFormat();
 	~AVFormat();
 
-	void getBlockSize(Block block, int& height, int& width);
+	void getBlockSize(Block& block, int& height, int& width);
+	//void getBlockSize(ResidualBlock& rblock, int& height, int& width);
 };
 
 struct Frame	// ”∆µ÷°–≈œ¢
