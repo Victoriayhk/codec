@@ -7,6 +7,7 @@
 #include "io.h"
 #include "quantization.h"
 #include "decode.h"
+#include "huffman.h"
 
 int main(int argc, char * argv[])
 {
@@ -52,7 +53,9 @@ int main(int argc, char * argv[])
 	int errno1 = encode(frame,para,pkt,frame_pool);
 		
 	unsigned char * buff = new unsigned char[1000000000];
-	pkt.to_stream(buff);
+	int s_size = pkt.to_stream(buff);
+	unsigned char *streambuff;
+	uint32_t stream_size;
 
 	PKT pkt1;
 	pkt1.from_stream(buff,para);

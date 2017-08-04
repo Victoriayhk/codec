@@ -45,7 +45,7 @@ inline int encode_one_component(vector<Block> & blocks, std::vector<ResidualBloc
 			block_height /= 2;
 			block_width /= 2;
 		}
-		ResidualBlock residual_block(block_height,block_width);
+		ResidualBlock residual_block(block_height,block_width); 
 		encode_one_block(blocks[i],residual_block,para,decode_buffer,frame_pool);
 
 		residual_blocks.push_back(residual_block);
