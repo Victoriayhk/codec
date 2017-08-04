@@ -98,12 +98,13 @@ int yuv_read(AVFormat & para, Frame &frame) {
 	if (fread(Us, sizeof(uint8_t), nsize/4, fin) == -1) return -1;
 	if (fread(Vs, sizeof(uint8_t), nsize/4, fin) == -1) return -1;
 
-	frame.Yblock.reserve(nsize);
-	frame.Ublock.reserve(nsize/4);
-	frame.Vblock.reserve(nsize/4);
+	//int block_num = ceil(1.0 * para.height /  para.block_height) *   ceil(1.0 * para.width / para.block_width);
+	//frame.Yblock.reserve(para.block_num);
+	//frame.Ublock.reserve(para.block_num);
+	//frame.Vblock.reserve(para.block_num);
 
-	Block block_Y(para.block_height ,para.block_width);
-	Block block_UV(para.block_height/2 ,para.block_width/2);
+	//Block block_Y(para.block_height ,para.block_width);
+	//Block block_UV(para.block_height/2 ,para.block_width/2);
 
 	int cnt = 0;
 	for (int i = 0; i < para.height; i += para.block_height) {
@@ -112,12 +113,13 @@ int yuv_read(AVFormat & para, Frame &frame) {
 			make_block(Us, frame.Ublock[cnt], i/2, j/2, para, 'U');
 			make_block(Vs, frame.Vblock[cnt], i/2, j/2, para, 'V');
 			cnt++;*/
-			make_block(Ys, block_Y,i, j, para, 'Y');
-			frame.Yblock.push_back(block_Y);
-			make_block(Us, block_UV,i/2, j/2, para, 'U');
-			frame.Ublock.push_back(block_UV);
-			make_block(Vs, block_UV,i/2, j/2, para, 'V');
-			frame.Vblock.push_back(block_UV);
+			make_block(Ys, frame.Yblock[cnt],i, j, para, 'Y');
+			//frame.Yblock.push_back(block_Y);
+			make_block(Us, frame.Ublock[cnt],i/2, j/2, para, 'U');
+			//frame.Ublock.push_back(block_UV);
+			make_block(Vs, frame.Vblock[cnt],i/2, j/2, para, 'V');
+			//frame.Vblock.push_back(block_UV);
+			cnt++;
 		}
 	}
 

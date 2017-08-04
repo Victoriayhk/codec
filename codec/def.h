@@ -40,6 +40,7 @@ public:
 public:
 	Block();
 	Block(int h , int w);
+	Block(Block::BlockType type,int height , int width);
 	void getBlockSize(AVFormat &para,int &height, int &width);
 
 	void print(AVFormat &para);
@@ -72,7 +73,10 @@ public:
 	*/
 	int block_width;
 	int block_height;
-
+	/**
+	* 宏块个数
+	*/
+	int block_num;
 	/**
 	*  当前frameid
 	*/
@@ -90,7 +94,7 @@ public:
 	AVFormat();
 	~AVFormat();
 
-	void getBlockSize(Block &block, int& height, int& width);
+	void getBlockSize(Block::BlockType block_type, int& height, int& width);
 };
 
 struct Frame	//视频帧信息
@@ -132,21 +136,7 @@ public:
 	//	Ublock.resize(h*w/block_h/block_w/4,nullptr);
 	//	Vblock.resize(h*w/block_h/block_w/4,nullptr);
 	//}
+	int init(AVFormat& para);
 	~Frame();
 };
 
-//class PKT
-//{
-//public:
-//	list<Block> Ylist;
-//	list<Block> Ulist;
-//	list<Block> Vlist;
-//
-//	~PKT()
-//	{
-//	}
-//
-//	//Block *Yblock;
-//	//Block *Ublock;
-//	//Block *Vblock;
-//};

@@ -123,7 +123,7 @@ public:
 	*/
 	ResidualBlock();
 	ResidualBlock(int );
-	ResidualBlock(int height , int width);
+	ResidualBlock(Block::BlockType type,int height , int width);
 	void getBlockSize(AVFormat &, int&, int&);
 
 	int to_stream(unsigned char *stream);
@@ -136,8 +136,9 @@ public:
 	std::vector<ResidualBlock> Ylist;
 	std::vector<ResidualBlock> Ulist;
 	std::vector<ResidualBlock> Vlist;
-
-
+	
+	int reserve(int size);
+	int init(AVFormat& para);
 	//PKT()
 	int to_stream(unsigned char *stream);
 	int from_stream(unsigned char *stream, AVFormat &para);

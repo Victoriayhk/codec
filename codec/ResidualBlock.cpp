@@ -3,7 +3,7 @@
 
 
 
-ResidualBlock::ResidualBlock(int height , int width):tree(0,0,height,width),data(width * height){}
+ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height,width),block_type(type),data(width * height){}
 
 ResidualBlock::ResidualBlock():tree(0,0,0,0)
 {
@@ -95,7 +95,26 @@ int ResidualBlock::from_stream(unsigned char *stream, int block_size) {
 	return p - stream;
 }
 
+/**
+* 为PKT预分配空间
+*/
+int PKT::reserve(int size){
+	Ylist.reserve(size);
+	Ulist.reserve(size);
+	Vlist.reserve(size);
+	return 0;
+}
+int PKT::init(AVFormat& para){
+	int h,w;
+	para.getBlockSize(Block::Y,h,w);
+	Ylist.resize(para.block_num,ResidualBlock(Block::Y,h,w));
+	para.getBlockSize(Block::U,h,w);
+	Ulist.resize(para.block_num,ResidualBlock(Block::U,h,w));
+	para.getBlockSize(Block::V,h,w);
+	Vlist.resize(para.block_num,ResidualBlock(Block::V,h,w));
 
+	return 0;
+}
 /*
 * 将PKT写入流
 * 流stream需要预先开辟空间

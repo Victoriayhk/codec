@@ -9,9 +9,9 @@ AVFormat::~AVFormat()
 {
 }
 
-void AVFormat::getBlockSize(Block & block, int& height, int& width)
+void AVFormat::getBlockSize(Block::BlockType  block_type, int& height, int& width)
 {
-	if(block.block_type == block.Y)
+	if(block_type == Block::Y)
 	{
 		height = block_height;
 		width = block_width;
@@ -63,6 +63,7 @@ void Block::getBlockSize(AVFormat &para, int& height, int& width)
 	}
 }
 
+Block::Block(Block::BlockType type,int height , int width):block_type(type),data(width * height){}
 
 Frame::Frame()
 {
@@ -71,4 +72,14 @@ Frame::Frame()
 Frame::~Frame()
 {
 }
+int Frame::init(AVFormat& para){
+	int h,w;
+	para.getBlockSize(Block::Y,h,w);
+	Yblock.resize(para.block_num,Block(Block::Y,h,w));
+	para.getBlockSize(Block::U,h,w);
+	Ublock.resize(para.block_num,Block(Block::U,h,w));
+	para.getBlockSize(Block::V,h,w);
+	Vblock.resize(para.block_num,Block(Block::V,h,w));
 
+	return 0;
+}
