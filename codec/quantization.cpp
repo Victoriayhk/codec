@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+
 #include "quantization.h"
 #include <iostream>
 #include <math.h>
@@ -19,11 +19,11 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 	int width = avFormat.block_width;
 	int height = avFormat.block_height;
 
-	if(block.block_type == block.Y)
+	if(block.block_type == Block::Y)
 	{
 		quantization_num = avFormat.quantizationY;
 	}
-	else if(block.block_type == block.U)
+	else if(block.block_type == Block::U)
 	{
 		quantization_num = avFormat.quantizationU;
 		width /= 2;
@@ -46,6 +46,7 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 			block.data[i + width * j] = (int16_t)tmp;
 		}
 	}
+	return 0;
 }
 
 int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFormat avFormat)
@@ -56,11 +57,11 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 	int width = avFormat.block_width;
 	int height = avFormat.block_height;
 
-	if(block.block_type == block.Y)
+	if(block.block_type == Block::Y)
 	{
 		quantization_num = avFormat.quantizationY;
 	}
-	else if(block.block_type == block.U)
+	else if(block.block_type == Block::U)
 	{
 		quantization_num = avFormat.quantizationU;
 		width /= 2;
@@ -79,7 +80,9 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 	{
 		for(int i = f_x; i <= l_x ; ++i)
 		{
+
 			block.data[i + width * j] *= quantization_num;
 		}
 	}
+	return 0;
 }

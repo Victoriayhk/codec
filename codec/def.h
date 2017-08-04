@@ -13,6 +13,9 @@ typedef unsigned short			uint16_t;
 
 //#define INTER_PREDICTION 1;
 //#define INTRA_PREDICTION 2;
+
+
+class AVFormat;
 class Block
 {
 public:
@@ -28,7 +31,7 @@ public:
 	/**
 	*  宏块类型
 	*/
-	enum{
+	enum BlockType{
 		Y,
 		U,
 		V,
@@ -37,6 +40,9 @@ public:
 public:
 	Block();
 	Block(int h , int w);
+	void getBlockSize(AVFormat &para,int &height, int &width);
+
+	void print(AVFormat &para);
 	~Block();
 };
 
@@ -47,6 +53,7 @@ class AVFormat	//视频基本信息以及视频编码各项参数
 	*/
 public:
 	FILE* video;
+	FILE* out_video;
 	char file_name[100];
 	/**
 	*  视频的高度与宽度
@@ -84,7 +91,6 @@ public:
 	~AVFormat();
 
 	void getBlockSize(Block block, int& height, int& width);
-
 };
 
 struct Frame	//视频帧信息

@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <stdint.h>
-
+#include "def.h"
 class Tree;
 class Node{
 	/**
@@ -107,11 +107,8 @@ public:
 	/**
 	*  宏块类型
 	*/
-	enum{
-		Y,
-		U,
-		V,
-	}block_type;
+
+	Block::BlockType block_type;
 
 	/**
 	* 子块划分树
@@ -124,7 +121,13 @@ public:
 	* height 高度
 	* width 宽度
 	*/
+	ResidualBlock();
+	ResidualBlock(int );
 	ResidualBlock(int height , int width);
+	void getBlockSize(AVFormat &, int&, int&);
+
+	int to_stream(unsigned char *stream);
+	int from_stream(unsigned char *stream, int block_size);
 };
 
 class PKT
@@ -133,4 +136,7 @@ public:
 	std::vector<ResidualBlock> Ylist;
 	std::vector<ResidualBlock> Ulist;
 	std::vector<ResidualBlock> Vlist;
+
+	int to_stream(unsigned char *stream);
+	int from_stream(unsigned char *stream, AVFormat &para);
 };
