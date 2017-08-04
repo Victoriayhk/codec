@@ -14,7 +14,11 @@ ResidualBlock::ResidualBlock(int blocktype):
 {
 	block_type = (Block::BlockType)blocktype;
 }
-
+ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),data(block.data.size()){
+	block_id = block.block_id;
+	block_type = block.block_type;
+	//tree = tree(0,0,height,width);
+}
 
 void ResidualBlock::getBlockSize(AVFormat &para, int& height, int& width)
 {

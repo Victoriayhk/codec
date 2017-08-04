@@ -10,42 +10,41 @@ using namespace std;
 
 
 
-int block_decode_save(Block &blk,BlockBufferPool &blockbuffer,FrameBufferPool& framebuffer)
-{ 
-	/*
-	if(blk.pre_type==blk.INTRA_PREDICTION)
-		blockbuffer.add_block_to_pool(blk);
-	else if(blk.pre_type==blk.INTER_PREDICTION)
-		blockbuffer.add_block_to_pool(blk);
-	else
-	{}
-	*/
-	return 0;
-}
 
-double dp_encode(Block & block, ResidualBlock & residual_block, int start_r, int start_l, int h, int w, BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool) {
-	static map<int,Node> dp;
-	double score0 = DBL_MAX, score1 = DBL_MAX, score2 = DBL_MAX;
-	int pattern_num = 2;//Pattern::get_pattern_number();
-	for(int i = 0; i < pattern_num; ++i){
-
-	/*	intra_predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,Pattern::getPattern(i))
-
-		quantization(start_r,start_l, h, w , residual_block , para);
-
-		Reversed_quantization(start_r,start_l, h, w , residual_block , para);
-
-		reversed_intra_predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,Pattern::getPattern(i));
-
-		int score = compute_coef(residual_block,start_r,start_l, h, w);
-
-		if(score < score0){
-			update_node();
-		}*/
-
-	}
-	//inter_predict
+double dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool) {
 	
+	static map<int,Node> dp;
+	
+	double score0 = DBL_MAX, score1 = DBL_MAX, score2 = DBL_MAX;
+
+
+	//int predict_inter(Block &block, ResidualBlock  &residual_block, BlockBufferPool &pool,double &score);
+	
+	
+	//Node node;
+	//int pattern;
+	//intra_predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,para,score0,pattern);
+	//node.pre_type = Node::INTRA_PREDICTION;
+	//node.prediction = pattern;
+
+
+	//inter_predict
+	predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,para,score0,pattern);
+
+	quantization(tph,tpw, rbh, rbw , residual_block , para);
+
+
+
+	Reverse_quantization(tph,tpw, rbh, rbw , residual_block , para);
+	re_predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,para,score0,pattern);
+	//Pattern::re_pattern(buffer_block,residual_block,tph,tpw,rbh,rbw,block_buffer_pool,i,para);
+
+	double score = compute_coef(block,buffer_block,tph,tpw, rbh, rbw);
+	
+	return score;
+
+
+
 
 	/*
 	if (w > 8) {
@@ -69,7 +68,8 @@ double dp_encode(Block & block, ResidualBlock & residual_block, int start_r, int
 	} else {
 		method_vector.push_back(2);
 	}*/
-	return 0;
+	
+
 }
 
 inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
@@ -83,6 +83,8 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 	for(int i = 0; i < block.data.size(); ++i){
 		residual_block.data[i] = block.data[i];
 	}
+
+	dp_encode_one_block(block, residual_block, residual_block.tree, block_buffer_pool, frame_pool);
 
 	// dp_inter_predict_prepare();
 	//dp_encode(block, residual_block, 0, 0, h, w, block_buffer_pool, frame_pool);
@@ -111,6 +113,8 @@ inline int encode_one_component(vector<Block> & blocks, std::vector<ResidualBloc
 
 }
 int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool){
+	Block block_buffer[3] = {Block(frame.Yblock[0]),Block(frame.Ublock[0]),Block(frame.Vblock[0])};
+	ResidualBlock residual_block_buffer[3] = {ResidualBlock(frame.Yblock[0]),ResidualBlock(frame.Ublock[0]),ResidualBlock(frame.Vblock[0])};
 	encode_one_component(frame.Yblock,pkt.Ylist,para,frame_pool[0]);
 	encode_one_component(frame.Ublock,pkt.Ulist,para,frame_pool[1]);
 	encode_one_component(frame.Vblock,pkt.Vlist,para,frame_pool[2]);

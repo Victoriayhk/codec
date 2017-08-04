@@ -5,6 +5,7 @@
 #include "def.h"
 class Tree;
 class Node{
+	public:
 	/**
 	*  采用的预测方法
 	*  INTER_PREDICTION：帧间预测
@@ -35,7 +36,7 @@ class Node{
 	* 转换方式
 	*/
 	int convertion;
-public:
+
 
 	friend Tree;
 };
@@ -43,6 +44,7 @@ public:
 
 
 class Tree{
+public:
 	/**
 	* 子块数据
 	*/
@@ -80,7 +82,7 @@ class Tree{
 	int right_bottom_h;
 	int right_bottom_w;
 
-public:
+
 	/**
 	* 提供当前节点表示的区域范围
 	*/
@@ -122,6 +124,7 @@ public:
 	* width 宽度
 	*/
 	ResidualBlock();
+	ResidualBlock(const Block &);
 	ResidualBlock(int );
 	ResidualBlock(Block::BlockType type,int height , int width);
 	void getBlockSize(AVFormat &, int&, int&);

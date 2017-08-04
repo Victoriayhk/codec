@@ -8,6 +8,6 @@
 //	return pattern_number; 
 //}
 
-void Pattern::pattern(Block&,ResidualBlock &,int,int,int,int,BlockBufferPool&,int pattern_type){
+void Pattern::pattern(Block&,ResidualBlock &,int,int,int,int,BlockBufferPool&,int pattern_type,AVFormat &para){
 
 }
