@@ -74,9 +74,6 @@ int ResidualBlock::to_stream(unsigned char *stream) {
 
 	short *pdata = data.data(); 
 
-	static int count = 0;
-	count++;
-	printf("count is %d\n",count);
 
 	p += save_to_buffer(pdata, p,data.size() * sizeof(data[0]));
 	return p - stream;

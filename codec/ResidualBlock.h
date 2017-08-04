@@ -137,6 +137,8 @@ public:
 	std::vector<ResidualBlock> Ulist;
 	std::vector<ResidualBlock> Vlist;
 
+
+	//PKT()
 	int to_stream(unsigned char *stream);
 	int from_stream(unsigned char *stream, AVFormat &para);
 };

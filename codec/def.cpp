@@ -9,7 +9,7 @@ AVFormat::~AVFormat()
 {
 }
 
-void AVFormat::getBlockSize(Block block, int& height, int& width)
+void AVFormat::getBlockSize(Block & block, int& height, int& width)
 {
 	if(block.block_type == block.Y)
 	{

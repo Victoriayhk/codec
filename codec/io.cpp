@@ -1,4 +1,3 @@
-
 #include<cstdio>
 #include<vector>
 #include<cstring>
@@ -8,23 +7,21 @@ using namespace std;
 
 
 /*
-* 从指定的开始位置创建一个Y/U/V型的block
+* 从一帧Y/U/V通道的数据流stream指定的开始位置创建一个Y/U/V型的block
 Args:
-	stream:		当前帧的Y/U/V流
-	 start_i:	块的起始行
-	 start_j:	块的起始列
-	 para:		视频信息
-	 channel:	'Y' or 'U' or 'V'
+	stream:  当前帧的Y/U/V流
+	 start_i: 块的起始行
+	 start_j: 块的起始列
+	 para:    视频信息
+	 channel: 'Y' or 'U' or 'V'
 Return:
 	一个处理好的block, 包括以下信息:
 		1. block.data: 对应通道的像素
 		2. block.block_type: block的通道类型 y/u/v
-	**没有指定block的id**
+	**没有指定block的id已经其它未列出的属性**
 */
-inline Block make_block(uint8_t *stream, int start_i, int start_j, AVFormat & para, int channel) {
-	Block block;
+inline int make_block(uint8_t *stream, Block &block, int start_i, int start_j, AVFormat & para, int channel) {
 	if (channel == 'Y') {  // Y通道, 大小为para.block_height * para.block_width
-		block.data.resize(para.block_height * para.block_width, 0);
 		int end_i = min(start_i + para.block_height, para.height);
 		int real_width = min(start_j + para.block_width, para.width) - start_j;
 		for (int i = start_i; i < end_i; i++) {
@@ -32,7 +29,6 @@ inline Block make_block(uint8_t *stream, int start_i, int start_j, AVFormat & pa
 		}
 		block.block_type = Block::Y;
 	} else {				// U/V通道, 大小只有Y的一半
-		block.data.resize(para.block_height * para.block_width/4, 0);
 		int end_i = min(start_i + para.block_height/2, para.height/2);
 		int real_width = min(start_j + para.block_width/2, para.width/2) - start_j;
 		for (int i = start_i; i < end_i; i++) {
@@ -44,11 +40,23 @@ inline Block make_block(uint8_t *stream, int start_i, int start_j, AVFormat & pa
 			block.block_type = Block::V;
 		}
 	}
-	return block;
+	return 0;
 }
 
 
-inline int block_to_stream(uint8_t *stream, Block &block, int start_i, int start_j, AVFormat para, char channel) {
+/*
+* tream_to_block的逆过程, 流化block数据到tream的相应位置
+Args:
+	 stream:  当前帧的Y/U/V流
+	 block:   待流化的block
+	 start_i: 块的起始行
+	 start_j: 块的起始列
+	 para:    视频信息
+	 channel: 'Y' or 'U' or 'V'
+Return:
+	处理状态: 0
+*/
+inline int block_to_stream(uint8_t *stream, const Block &block, int start_i, int start_j, AVFormat para, char channel) {
 	if (channel == 'Y') {  // Y通道, 大小为para.block_height * para.block_width
 		int end_i = min(start_i + para.block_height, para.height);
 		int real_width = min(start_j + para.block_width, para.width) - start_j;
@@ -56,7 +64,6 @@ inline int block_to_stream(uint8_t *stream, Block &block, int start_i, int start
 			memcpy(&stream[i*para.width + start_j], &block.data[(i-start_i) * para.block_width], sizeof(uint8_t)*real_width);
 		}
 	} else {				// U/V通道, 大小只有Y的一半
-		block.data.resize(para.block_height * para.block_width/4, 0);
 		int end_i = min(start_i + para.block_height/2, para.height/2);
 		int real_width = min(start_j + para.block_width/2, para.width/2) - start_j;
 		for (int i = start_i; i < end_i; i++) {
@@ -91,18 +98,29 @@ int yuv_read(AVFormat & para, Frame &frame) {
 	if (fread(Us, sizeof(uint8_t), nsize/4, fin) == -1) return -1;
 	if (fread(Vs, sizeof(uint8_t), nsize/4, fin) == -1) return -1;
 
+	frame.Yblock.reserve(nsize);
+	frame.Ublock.reserve(nsize/4);
+	frame.Vblock.reserve(nsize/4);
+
+	Block block_Y(para.block_height ,para.block_width);
+	Block block_UV(para.block_height/2 ,para.block_width/2);
+
+	int cnt = 0;
 	for (int i = 0; i < para.height; i += para.block_height) {
 		for (int j = 0; j < para.width; j += para.block_width) {
-			frame.Yblock.push_back(make_block(Ys, i, j, para, 'Y'));
-			frame.Ublock.push_back(make_block(Us, i/2, j/2, para, 'U'));
-			frame.Vblock.push_back(make_block(Vs, i/2, j/2, para, 'V'));
+			/*make_block(Ys, frame.Yblock[cnt], i, j, para, 'Y');
+			make_block(Us, frame.Ublock[cnt], i/2, j/2, para, 'U');
+			make_block(Vs, frame.Vblock[cnt], i/2, j/2, para, 'V');
+			cnt++;*/
+			make_block(Ys, block_Y,i, j, para, 'Y');
+			frame.Yblock.push_back(block_Y);
+			make_block(Us, block_UV,i/2, j/2, para, 'U');
+			frame.Ublock.push_back(block_UV);
+			make_block(Vs, block_UV,i/2, j/2, para, 'V');
+			frame.Vblock.push_back(block_UV);
 		}
 	}
-	for (size_t i = 0; i < (int)frame.Yblock.size(); i++) {
-		frame.Yblock[i].block_id = i;
-		frame.Ublock[i].block_id = i;
-		frame.Vblock[i].block_id = i;
-	}
+
 	delete Ys;
 	delete Us;
 	delete Vs;
@@ -127,8 +145,8 @@ int yuv_write(AVFormat & para, Frame &frame) {
 	for (int i = 0; i < para.height; i += para.block_height) {
 		for (int j = 0; j < para.width; j += para.block_width) {
 			block_to_stream(Ys, frame.Yblock[cnt], i, j, para, 'Y');
-			block_to_stream(Us, frame.Ublock[cnt], i / 2, j / 2, para, 'U');
-			block_to_stream(Vs, frame.Vblock[cnt], i / 2, j / 2, para, 'V');
+			block_to_stream(Us, frame.Ublock[cnt], i/2, j/2, para, 'U');
+			block_to_stream(Vs, frame.Vblock[cnt], i/2, j/2, para, 'V');
 			cnt ++;
 		}
 	}
@@ -139,29 +157,6 @@ int yuv_write(AVFormat & para, Frame &frame) {
 	delete Ys;
 	delete Us;
 	delete Vs;
+
 	return 0;
 }
-
-// int write_frames_to_file(Frame *pframe, FILE *fout) {
-// 	for (int i = 0; i < video.nFrame; i++) {
-// 		fwrite(pframe[i].Ys, sizeof(unsigned char), Frame::nsize, fout);
-// 		fwrite(pframe[i].Us, sizeof(unsigned char), Frame::nsize/4, fout);
-// 		fwrite(pframe[i].Vs, sizeof(unsigned char), Frame::nsize/4, fout);
-// 	}
-
-// 	return 0;
-// }
-/*
-int main(int argc, char *argv[]) {
-	FILE *fin, *fout;
-	fin = fopen(argv[1], "rb");
-	fout = fopen(argv[2], "wb");
-
-
-	Frame *frames = new Frame[video.nFrame];
-	for (int i = 0; i < video.nFrame; i++) {
-		printf("%d: %d\n", i, yuv_read(fin, frames[i]));
-	}
-	// write_frames_to_file(frames, fout);
-}
-*/

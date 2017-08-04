@@ -4,7 +4,7 @@
 #include "encode.h"
 #include <queue>
 #include "quantization.h"
-
+#include <time.h>
 using namespace std;
 
 
@@ -30,24 +30,21 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 	}
 
 	int h,w;
-	para.getBlockSize(block,h,w);
+	block.getBlockSize(para,h,w);
 	quantization(0 ,0 ,h-1 ,w-1 , residual_block , para);
 
 	return 0;
 }
 inline int encode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,AVFormat &para,FrameBufferPool & frame_pool){
-	BlockBufferPool  decode_buffer(para.height,para.width);
+
+	BlockBufferPool   * decode_buffer = new BlockBufferPool(para.height,para.width);
+	int block_height,block_width;
+	blocks[0].getBlockSize(para,block_height,block_width);
+	ResidualBlock residual_block(block_height,block_width);
 
 	for(int i=0;i<blocks.size();++i){
-		int block_height = para.block_height;
-		int block_width = para.block_width;
-		if(blocks[i].block_type != Block::Y)
-		{
-			block_height /= 2;
-			block_width /= 2;
-		}
-		ResidualBlock residual_block(block_height,block_width);
-		encode_one_block(blocks[i],residual_block,para,decode_buffer,frame_pool);
+		
+		encode_one_block(blocks[i],residual_block,para,*decode_buffer,frame_pool);
 
 		residual_blocks.push_back(residual_block);
 	}
