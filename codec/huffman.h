@@ -11,10 +11,15 @@
 #include <stdint.h>
 #include "ResidualBlock.h"
 
+#define BLOCK_NUM 1
+
 #define positive 0
 #define negative 1
 
 void entropy_test();
+
+int entropy_coding_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream,unsigned int* len);
+int entropy_decode_slice(ResidualBlock* rBlock,int block_len , AVFormat& para, uint8_t *stream, unsigned int buff_length);
 
 
 //int entropy_coding_slice(ResidualBlock* rBlock, int block_num, AVFormat& para, uint8_t **stream);
@@ -28,7 +33,7 @@ void entropy_test();
 * para				配置文件
 * stream			返回编码后的流
 */
-int entropy_coding_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
+int entropy_coding_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream, unsigned int *buff_length);
 
 /*
 * 将流逆熵编码并将数据保存在输入的残差block中
@@ -39,8 +44,7 @@ int entropy_coding_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 * stream			返回编码后的流
 * buff_length		流长度
 */
-int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length);
-
+int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, unsigned int buff_length);
 
 int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream);
 int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream);

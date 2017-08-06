@@ -11,6 +11,7 @@
 #include <iostream>
 #include "huffman.h"
 #include<bitset>
+#include <vector>
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -21,6 +22,8 @@
 #endif
 
 using namespace std;
+
+unsigned int* s_len; 
 
 typedef struct huffman_node_tag
 {
@@ -1058,7 +1061,7 @@ int huffman_decode_memory(const unsigned char *bufin,
 	return 0;
 }
 
-int entropy_coding_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream)
+int entropy_coding_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream, unsigned int* buff_length)
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	int sign_size = (b_size + 7)*0.125;
@@ -1067,7 +1070,8 @@ int entropy_coding_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 
 	unsigned int out_length;
 
-	int buff_length = huffman_encode_memory(*stream, (b_size + sign_size) * sizeof(uint8_t), stream, &out_length);
+	*buff_length = huffman_encode_memory(*stream, (b_size + sign_size) * sizeof(uint8_t), stream, &out_length);
+	*buff_length = out_length;
 
 	return out_length;
 }
@@ -1082,7 +1086,7 @@ void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlo
 	rBlock.data[x+ y*width] = -rBlock.data[x+ y*width];
 }
 
-int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length)
+int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, unsigned int buff_length)
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	int sign_size = (b_size + 7) *0.125;
@@ -1095,53 +1099,6 @@ int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	huffman_decode_memory(stream,buff_length,&sign_flag,&out_length);
 	entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,sign_flag);
 	return 0;
-}
-
-void entropy_test()
-{
-	AVFormat para;
-	para.block_width = 16;
-	para.block_height = 16;
-	ResidualBlock rblock(16,16);
-	rblock.block_type = Block::Y;
-
-
-	for(int i = 0;i<16;++i)
-	{
-		for(int j=0;j<16;++j)
-		{
-			int flag = 1;
-			if(i%2 == 0) flag = -1;
-			rblock.data[i* 16 + j] = (i+j)*flag;
-		}
-	}
-
-	for(int i = 0;i<16;++i)
-	{
-		for(int j=0;j<16;++j)
-		{
-			cout<<rblock.data[i*16+j]<<" ";
-		}
-		cout<<endl;
-	}
-	cout<<endl;
-
-	int f_x = 0,f_y = 0,l_x = 15,l_y = 15;
-	//cin>>f_x>>f_y>>l_x>>l_y;
-	uint8_t* stream = nullptr;
-
-	int len = entropy_coding_block(f_x,f_y,l_x,l_y,rblock,para,&stream);
-	entropy_decode_block(f_x,f_y,l_x,l_y,rblock,para,stream,len);
-
-	for(int i = 0;i<16;++i)
-	{
-		for(int j=0;j<16;++j)
-		{
-			cout<<rblock.data[i*16+j]<<" ";
-		}
-		cout<<endl;
-	}
-	cout<<endl;
 }
 
 int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream )
@@ -1278,6 +1235,129 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 				reverse_data(f_x,f_y,l_x,l_y,i*8 + 7 - j,rBlock,width);
 			}
 		}
+	}
+
+	return 0;
+}
+
+void entropy_test()
+{
+	AVFormat para;
+	para.block_width = 16;
+	para.block_height = 16;
+	ResidualBlock rblock[4];
+	ResidualBlock rblock2(8,8);
+	rblock2.block_type = Block::U;
+
+	for(int i = 0;i<8;++i)
+		{
+			for(int j=0;j<8;++j)
+			{
+				int flag = 1;
+				if(i%2 == 0) flag = -1;
+				if(j<8) rblock2.data[i* 8 + j] = 0;
+				else 
+				rblock2.data[i* 8 + j] = (i+j)*flag;
+			}
+		}
+
+	for(int k=0;k<BLOCK_NUM;++k)
+	{
+		rblock[k] = ResidualBlock(8,8);
+		rblock[k].block_type = Block::U;
+		for(int i = 0;i<8;++i)
+		{
+			for(int j=0;j<8;++j)
+			{
+				int flag = 1;
+				if(i%2 == 0) flag = -1;
+				if(j<8) rblock[k].data[i* 8 + j] = 0;
+				else 
+				rblock[k].data[i* 8 + j] = (i+j)*flag;
+			}
+		}
+	}
+
+	for(int k=0;k<BLOCK_NUM;++k)
+	{
+		for(int i = 0;i<8;++i)
+		{
+			for(int j=0;j<8;++j)
+			{
+				cout<<rblock[k].data[i*8+j]<<" ";
+			}
+			cout<<endl;
+		}
+		cout<<endl;
+	}
+	cout<<endl<<endl;
+
+	int f_x = 0,f_y = 0,l_x = 7,l_y = 7;
+	//cin>>f_x>>f_y>>l_x>>l_y;
+	uint8_t* stream = nullptr;
+	unsigned int len = 0;
+
+	//entropy_coding_slice(rblock, BLOCK_NUM, para, &stream , &len);
+	//entropy_decode_slice(rblock, BLOCK_NUM, para, stream, len);
+	int len2 = entropy_coding_block(f_x,f_y,l_x,l_y,rblock2,para,&stream,&len);
+	entropy_decode_block(f_x,f_y,l_x,l_y,rblock2,para,stream,len);
+
+	for(int k=0;k<BLOCK_NUM;++k)
+	{
+		for(int i = 0;i<8;++i)
+		{
+			for(int j=0;j<8;++j)
+			{
+				cout<<rblock[k].data[i*8+j]<<" ";
+			}
+			cout<<endl;
+		}
+		cout<<endl;
+	}
+	cout<<endl<<endl;
+}
+
+int entropy_coding_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream, unsigned int* len)
+{
+	int height,width;
+	rBlock[0].getBlockSize(para,height,width);
+
+	int b_size = width * height;
+	int sign_size = (b_size + 7) *0.125;
+
+	int newlen = 0;
+
+	*stream = (uint8_t*)malloc(block_len * (b_size + sign_size) * sizeof(uint8_t));
+	uint8_t* point = *stream;
+	s_len = new unsigned int[3600];
+
+	for(int i = 0 ;i < block_len ; ++i)
+	{
+		unsigned int len = 0;
+		entropy_coding_block(0,0,width-1,height-1,rBlock[i],para, &point,&len);
+
+		s_len[i] = len;
+
+		point += len;
+		newlen += len;
+	}
+
+	*len = newlen;
+
+	return 0;
+}
+
+int entropy_decode_slice(ResidualBlock* rBlock,int block_len , AVFormat& para, uint8_t *stream, unsigned int buff_length)
+{
+	int height,width;
+	rBlock[0].getBlockSize(para,height,width);
+
+	uint8_t* p = stream;
+
+	for(int i = 0 ;i < block_len ; ++i)
+	{
+		entropy_decode_block(0,0,height-1,width-1,rBlock[i],para,p,s_len[i]);
+		p += s_len[i];
 	}
 
 	return 0;
