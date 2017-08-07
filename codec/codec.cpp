@@ -19,9 +19,9 @@ int main(int argc, char * argv[])
 	para.frame_num = 750;
 	para.height = 720;
 	para.width = 1280;
-	para.quantizationY = 10;
-	para.quantizationU = 15;
-	para.quantizationV = 15;
+	para.quantizationY = 50;
+	para.quantizationU = 80;
+	para.quantizationV = 80;
 	
 	strcpy(para.file_name,"D:\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\youjiyingxiong.yuv");
 	//strcpy(para.file_name,"D:\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\dongman.yuv");
