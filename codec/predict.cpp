@@ -28,7 +28,7 @@ int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPo
 		Pattern::predict(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,tree.data->prediction,para);
 	}else{
 	}
-
+	return 0;
 }
 
 double calc_coef(int,int,int,int,Block & block,Block & block_another){
@@ -71,11 +71,11 @@ double search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &
 	return score;
 }
 
-int re_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para){
+int reverse_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para){
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	if(tree.data->pre_type == Node::INTRA_PREDICTION){
 		Pattern::de_predict(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,tree.data->prediction,para);
 	}else{
 	}
-
+	return 0;
 }

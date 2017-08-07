@@ -13,7 +13,7 @@ class BlockBufferPool{
 public:
 	BlockBufferPool(int height,int width):frame(height*width),height(height),width(width){}
 
-	void set_block(Block & block,int tlh, int tlw, int brh, int brw);
+	//void set_block(Block & block,int tlh, int tlw, int brh, int brw,AVFormat &para);
 	void setValue(int h,int w,int8_t value);
 	int8_t getValue(int h,int w);
 	int clear();

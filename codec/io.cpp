@@ -114,10 +114,13 @@ int yuv_read(AVFormat & para, Frame &frame) {
 			make_block(Vs, frame.Vblock[cnt], i/2, j/2, para, 'V');
 			cnt++;*/
 			make_block(Ys, frame.Yblock[cnt],i, j, para, 'Y');
+			frame.Yblock[cnt].block_id = cnt;
 			//frame.Yblock.push_back(block_Y);
 			make_block(Us, frame.Ublock[cnt],i/2, j/2, para, 'U');
+			frame.Ublock[cnt].block_id = cnt;
 			//frame.Ublock.push_back(block_UV);
 			make_block(Vs, frame.Vblock[cnt],i/2, j/2, para, 'V');
+			frame.Vblock[cnt].block_id = cnt;
 			//frame.Vblock.push_back(block_UV);
 			cnt++;
 		}

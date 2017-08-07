@@ -74,7 +74,7 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 	int j_offset = (r_block.block_id % para.block_num_per_row) * block_w;	// 当前block的起始像素所在Frame的列
 
 	if (pattern_type == 0) {		// 竖向预测, 参考小块上方的一条像素
-		if (i_offset > 0) {			// 本帧内, 上方有可参考的像素
+		if (i_offset > 0) {			// 本帧内, 上方有可参考的像素s
 			for (int i = start_r; i <= end_r && i + i_offset < para.height; i++) {
 				for (int j = start_c; j <= end_c && j + j_offset < para.width; j++) {
 					blk.data[i * block_w + j] = r_block.data[i * block_w + j] + b_pool.getValue(i_offset - 1, j_offset + j);

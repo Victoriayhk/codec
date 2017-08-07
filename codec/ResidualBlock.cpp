@@ -3,7 +3,7 @@
 
 
 
-ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height,width),block_type(type),data(width * height){}
+ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type),data(width * height){}
 
 ResidualBlock::ResidualBlock():tree(0,0,0,0)
 {
