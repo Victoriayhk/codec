@@ -89,6 +89,9 @@ public:
 	double quantizationU;
 	double quantizationV;
 
+
+	int block_num_per_row;
+	int block_num_per_col;
 	//视频编码各项参数
 public:
 	AVFormat();

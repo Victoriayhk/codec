@@ -73,16 +73,16 @@ public:
 	/**
 	* 左上角相对坐标
 	*/
-	int left_top_h;
-	int left_top_w;
+	uint8_t left_top_h;
+	uint8_t left_top_w;
 	
 	/**
 	* 右下角相对坐标
 	*/
-	int right_bottom_h;
-	int right_bottom_w;
+	uint8_t right_bottom_h;
+	uint8_t right_bottom_w;
 
-
+	double score;
 	/**
 	* 提供当前节点表示的区域范围
 	*/

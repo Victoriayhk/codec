@@ -11,82 +11,93 @@ using namespace std;
 
 
 
+double dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para){
+	static map<int,Tree *> dp;
+}
 
 double dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para) {
 	
-	static map<int,Node> dp;
-	
-	double score = DBL_MAX,score0 = DBL_MAX, score1 = DBL_MAX, score2 = DBL_MAX;
-	
-	Node * node = new Node;
-	tree.data = node;
+	static map<int,Tree *> dp;
+	int tmp = 0;
+	tmp = tmp | (tree.left_top_h << 24) | (tree.left_top_w << 16) | (tree.right_bottom_h << 8) | (tree.right_bottom_w);
+	if(dp.fint(tmp) != dp.end()){
+		tree.left = dp[tmp]->left;
+		tree.right = dp[tmp]->right;
+		tree.data = dp[tmp]->data;
+		tree.score = dp[tmp]->score;
+	}else{
+		double score0 = DBL_MAX, score1 = DBL_MAX, score2 = DBL_MAX;
+		tree.score = DBL_MAX,
+		Node * node = new Node;
+		tree.data = node;
+		score0 = search_predict_pattern(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para);
+		int w = tree.right_bottom_w - tree.left_top_w + 1;
+		int h = tree.left_top_h - tree.right_bottom_h;
 
-	score0 = search_predict_pattern(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para);
-	int w = tree.right_bottom_w - tree.left_top_w + 1;
-	int h = tree.left_top_h - tree.right_bottom_h;
-	Tree * left, * right;
-	if (w >= 8) {
-		left = new Tree(tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w /2 );
-		right = new Tree(tree.left_top_h,tree.left_top_w/2 + 1,tree.right_bottom_h,tree.right_bottom_w);
+		Tree * left, * right;
 
-		score1 = dp_encode_one_block(block, residual_block, *left, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para) + 
-						dp_encode_one_block(block, residual_block, *right, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
+		if (w >= 8) {
+			left = new Tree(tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w /2 );
+			right = new Tree(tree.left_top_h,tree.left_top_w/2 + 1,tree.right_bottom_h,tree.right_bottom_w);
 
-	}
+			score1 = dp_encode_one_block(block, residual_block, *left, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para) + 
+							dp_encode_one_block(block, residual_block, *right, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
 
-	if (h >= 8) {
-		if(score1 < score0){
-			block_buffer_pool.set_block(block_buffer,tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
+		}
+
+		if (h >= 8) {
+			if(score1 < score0){
+				//block_buffer_pool.set_block(block_buffer,tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
+				//residual_block_buffer.data = residual_block.data;
+				tree.left = left;
+				tree.right = right;
+			}else if(w >= 8) {
+				left = nullptr;
+				right = nullptr;
+			}
+			left = new Tree(tree.left_top_h,tree.left_top_w,tree.right_bottom_h/2,tree.right_bottom_w );
+			right = new Tree(tree.left_top_h/2 + 1,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
+
+			score2 = dp_encode_one_block(block, residual_block, *left, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para) + 
+							dp_encode_one_block(block, residual_block, *right, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
+
+		}
+		if(score0 <= score1 && score0 <= score2){
+			if(h >= 8){
+				delete left;
+				delete right;
+				left = nullptr;
+				right = nullptr;
+			}
+			delete tree.data;
+			tree.data = nullptr;
+			tree.split_direction = Tree::NONE;
+			score = score0;
+			predict(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para,score0);
+
+			int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
+			quantization(tph,tpw, brh, brw , residual_block , para);
+
 			residual_block_buffer.data = residual_block.data;
+
+			Reverse_quantization(tph,tpw, brh, brw , residual_block_buffer , para);
+
+			re_predict(block_buffer,residual_block_buffer,tree,block_buffer_pool,frame_pool,block_buffer,para);
+
+			block_buffer_pool.set_block(block_buffer,tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
+		}
+		else if(score2 > score1){
+			tree.split_direction = Tree::VERTICAL;
+			residual_block.data = residual_block_buffer.data;
+			score = score1;
+		}else{
+			tree.split_direction = Tree::HORIZONTAL;
 			tree.left = left;
 			tree.right = right;
-		}else if(w >= 8) {
-			delete left;
-			delete right;
-			left = nullptr;
-			right = nullptr;
+			score = score2;
+			block_buffer_pool.set_block(block_buffer,tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
 		}
-		left = new Tree(tree.left_top_h,tree.left_top_w,tree.right_bottom_h/2,tree.right_bottom_w );
-		right = new Tree(tree.left_top_h/2 + 1,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
 
-		score2 = dp_encode_one_block(block, residual_block, *left, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para) + 
-						dp_encode_one_block(block, residual_block, *right, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
-
-	}
-	if(score0 <= score1 && score0 <= score2){
-		if(h >= 8){
-			delete left;
-			delete right;
-			left = nullptr;
-			right = nullptr;
-		}
-		delete tree.data;
-		tree.data = nullptr;
-		tree.split_direction = Tree::NONE;
-		score = score0;
-		predict(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para,score0);
-
-		int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
-		quantization(tph,tpw, brh, brw , residual_block , para);
-
-		residual_block_buffer.data = residual_block.data;
-
-		Reverse_quantization(tph,tpw, brh, brw , residual_block_buffer , para);
-
-		re_predict(block_buffer,residual_block_buffer,tree,block_buffer_pool,frame_pool,block_buffer,para);
-
-		block_buffer_pool.set_block(block_buffer,tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
-	}
-	else if(score2 > score1){
-		tree.split_direction = Tree::VERTICAL;
-		residual_block.data = residual_block_buffer.data;
-		score = score1;
-	}else{
-		tree.split_direction = Tree::HORIZONTAL;
-		tree.left = left;
-		tree.right = right;
-		score = score2;
-		block_buffer_pool.set_block(block_buffer,tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
 	}
 	return score;
 
