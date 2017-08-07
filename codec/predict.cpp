@@ -37,7 +37,7 @@ double calc_coef(int,int,int,int,Block & block,Block & block_another){
 
 double intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,Block & buffer_block,AVFormat & para,double & min_score){
 	int pattern_num = 2;
-	//int min_score = DBL_MAX;
+
 	int best_pattern = 0;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	double score = min_score;

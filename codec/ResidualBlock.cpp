@@ -3,7 +3,7 @@
 
 
 
-ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height,width),block_type(type){
+ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type){
 	data.clear();
 	data.resize(width*height);
 }
@@ -80,15 +80,20 @@ int ResidualBlock::to_stream(unsigned char *stream) {
 	p += save_to_buffer(block_id, p);
 	p += save_to_buffer(order, p);
 	p += save_to_buffer(block_type, p);
-	p += save_to_buffer(type_slice, p);
-	if(type_slice==0)
-		p += save_to_buffer(node[0], p);
-	if(type_slice==1){
-		for(int i=0;i<4;++i)
-			p += save_to_buffer(node[i], p);
+	if(!is_tree){
+		p += save_to_buffer(type_slice, p);
+		if(type_slice==0)
+			p += save_to_buffer(node[0], p);
+		if(type_slice==1){
+			for(int i=0;i<4;++i)
+				p += save_to_buffer(node[i], p);
+		}
+	}else{
+	
 	}
-	short *pdata = data.data(); 
 
+
+	short *pdata = data.data(); 
 
 	p += save_to_buffer(pdata, p,data.size() * sizeof(data[0]));
 	return p - stream;

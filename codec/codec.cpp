@@ -3,6 +3,7 @@
 
 
 #include "tree_encode.h"
+#include "encode.h"
 #include "def.h"
 #include "io.h"
 #include "quantization.h"
@@ -60,7 +61,10 @@ int main(int argc, char * argv[])
 	yuv_read(para,frame);
 
 	int start_time=clock();
+
+	int error =  tree_encode(frame,para,pkt,frame_pool);
 	int end_time=clock();
+
 	std::cout<< "Running time is: "<<static_cast<double>(end_time-start_time)<<"ms"<<std::endl;	
 
 	for(auto i =0; i != 8;++i){
@@ -76,8 +80,8 @@ int main(int argc, char * argv[])
 	//	printf("%d\n",pkt1.Ylist[0].data[i]);
 	//}
 	printf("=================================================================\n");
-;
-	int errno2 = decode(frame1,para,pkt1,frame_pool);
+
+	//int errno2 = decode(frame1,para,pkt1,frame_pool);
 
 
 	//for(auto i =0; i != 8  * 8;++i){
@@ -85,7 +89,7 @@ int main(int argc, char * argv[])
 	//}
 
 	
-	int result = yuv_write(para, frame1);
+	//int result = yuv_write(para, frame1);
 
 	}
 	fclose(para.out_video);	

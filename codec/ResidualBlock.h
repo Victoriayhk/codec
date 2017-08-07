@@ -104,7 +104,7 @@ public:
 	int type_slice;
 	vector<int> node;
 	std::vector<int16_t> data;
-
+	bool is_tree;
 	/**
 	* ¾ØÕóĞòÁĞ»¯Ë³Ğò
 	*/
