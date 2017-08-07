@@ -155,5 +155,11 @@ public:
 	int to_stream(unsigned char *stream);
 	int from_stream(unsigned char *stream, AVFormat &para);
 
+	int stream_write(AVFormat& para);
+	int stream_read(AVFormat& para);
+
+	int block_head2stream(AVFormat& para,uint8_t** stream, ResidualBlock& rBlock, int *buff_len);
+	int block_stream2head(AVFormat& para, uint8_t* stream, ResidualBlock& rBlock, int buff_len, int *head_length);
+
 	int clear();
 };

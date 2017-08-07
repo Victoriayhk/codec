@@ -10,6 +10,7 @@
 #include <time.h>
 #include "Pattern.h"
 #include <iostream>
+#include "huffman.h"
 #include <fstream>
 #include <string>
 //#include "huffman.h"
@@ -36,15 +37,35 @@ int main(int argc, char * argv[])
 
 	for(int i = 0; i < 50; ++i){
 		yuv_read(para,frame);
+		int start_time=clock();
 		int errno1 = encode(frame,para,pkt,frame_pool);
-		int errno2 = decode(frame1,para,pkt,frame_pool);
-		yuv_write(para,frame1);
-		printf("Encode Frame %d\n",i);
+		pkt.stream_write(para);
+		int end_time=clock();
+		std::cout<< "Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
+		for(auto i =0; i != 8;++i){
+			printf("%d ",pkt.Ylist[0].data[i]);
+		}
+		printf("\n");
+
 	}
-	fclose(para.out_video);	
-	int a;
-	scanf("%d",&a);
-
-	return 0;
+printf("=================================================================\n");
+fclose(para.stream_writer);
+para.stream_writer = nullptr;
+for(int i = 0; i < 50; ++i){
+		int start_time=clock();
+		pkt1.stream_read(para);		
+		int errno2 = decode(frame1,para,pkt1,frame_pool);
+		int result = yuv_write(para, frame1);
+		int end_time=clock();
+		std::cout<< "Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
+		printf("decode Frame %d\n",i);
 }
+fclose(para.out_video);	
+fclose(para.video);	
+fclose(para.stream_reader);
+para.stream_reader = nullptr;
+//	int a;
+//	scanf("%d",&a);
+	return 0;
 
+}

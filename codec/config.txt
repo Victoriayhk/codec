@@ -1,11 +1,12 @@
 frame_num=750
 height=720
 width=1280
-quantizationY=10
-quantizationU=15
-quantizationV=15
+quantizationY=50
+quantizationU=80
+quantizationV=80
 input_video=D:\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\youjiyingxiong.yuv
 #file_name=C:\\Users\\upperli\\Desktop\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\dongman.yuv
-output_video=D:\\1234.yuv
+output_video=D:\\back.yuv
 block_height=16
 block_width=16
+stream_file_name=D:\\code.h268

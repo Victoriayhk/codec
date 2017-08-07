@@ -49,14 +49,27 @@ public:
 
 class AVFormat	//视频基本信息以及视频编码各项参数
 {
+public:
 	/**
 	*  视频名称
 	*/
-public:
+	char file_name[100];
+
+	/**
+	*  视频写入写出文件
+	*/
 	FILE* video;
 	FILE* out_video;
-	char file_name[100];
+
 	char out_file_name[100];
+	/**
+	*  流文件写入写出文件
+	*/
+	char stream_file_name[100];
+	FILE* stream_writer;
+	FILE* stream_reader;
+
+
 	/**
 	*  视频的高度与宽度
 	*/
@@ -93,12 +106,9 @@ public:
 	double quantizationV;
 
 	/**
-	*  流文件写入写出文件
+	*  熵编码一次作用的宏块数目
 	*/
-	char stream_file_name[100];
-	FILE* stream_writer;
-	FILE* stream_reader;
-
+	static const int entropy_silce_size = 256;
 
 	//视频编码各项参数
 public:
