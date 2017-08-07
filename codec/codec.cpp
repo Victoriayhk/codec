@@ -8,6 +8,7 @@
 #include "quantization.h"
 #include "decode.h"
 #include <time.h>
+#include "Pattern.h"
 #include <iostream>
 
 int main(int argc, char * argv[])
@@ -18,17 +19,21 @@ int main(int argc, char * argv[])
 	para.frame_num = 750;
 	para.height = 720;
 	para.width = 1280;
-	para.quantizationY = 1.1;
-	para.quantizationU = 4;
-	para.quantizationV = 4;
+	para.quantizationY = 10;
+	para.quantizationU = 15;
+	para.quantizationV = 15;
 	
 	strcpy(para.file_name,"D:\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\youjiyingxiong.yuv");
+	//strcpy(para.file_name,"D:\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\dongman.yuv");
 	//para.file_name = "C:\\Users\\upperli\\Desktop\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\dongman.yuv";
 	para.video = fopen(para.file_name,"rb");
 	para.block_height = 16;
 	para.block_width = 16;
-	para.block_num = ceil(1.0 * para.height /  para.block_height) *   ceil(1.0 * para.width / para.block_width);
+	para.block_num_per_row = ceil(1.0 * para.width / para.block_width); 
+	para.block_num_per_col = ceil(1.0 * para.height /  para.block_height);
+	para.block_num = para.block_num_per_row * para.block_num_per_col;
 	char out_file_name[100];
+	//strcpy(out_file_name,"D:\\3.yuv");
 	strcpy(out_file_name,"D:\\2.yuv");
 	para.out_video = fopen(out_file_name,"wb");
 
@@ -52,7 +57,6 @@ int main(int argc, char * argv[])
 
 	yuv_read(para,frame);
 
-
 	int start_time=clock();
 
 	int errno1 = encode(frame,para,pkt,frame_pool);
@@ -67,8 +71,6 @@ int main(int argc, char * argv[])
 	pkt.to_stream(buff);
 
 	
-
-
 	pkt1.from_stream(buff,para);
 
 	//for(auto i =0; i != 8 * 8;++i){

@@ -58,6 +58,7 @@ class Tree{
 		VERTICAL
 	}split_direction;
 
+	
 	/**
 	* 树的左节点
 	*/
@@ -84,6 +85,8 @@ public:
 	/**
 	* 提供当前节点表示的区域范围
 	*/
+	
+
 	Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w);
 };
 
@@ -96,7 +99,8 @@ class ResidualBlock
 	*/
 public:
 	int block_id;
-
+	int type_slice;
+	vector<int> node;
 	std::vector<int16_t> data;
 
 	/**
@@ -128,6 +132,8 @@ public:
 
 	int to_stream(unsigned char *stream);
 	int from_stream(unsigned char *stream, int block_size);
+
+	int clear();
 };
 
 class PKT
@@ -142,4 +148,6 @@ public:
 	//PKT()
 	int to_stream(unsigned char *stream);
 	int from_stream(unsigned char *stream, AVFormat &para);
+
+	int clear();
 };
