@@ -1,13 +1,110 @@
 #include "def.h"
-
+#include <string>
+#include <fstream>
 AVFormat::AVFormat():
-	video(nullptr)
+	video(nullptr),
+	out_video(nullptr),
+	stream_writer(nullptr),
+	stream_reader(nullptr)
 {
+
+	strcpy(file_name,"D:\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\youjiyingxiong.yuv");
+	strcpy(out_file_name,"D:\\1234.yuv");
+
+
+	height = 720;
+	width = 1280;
+
+	fps = 25;
+    frame_num = 750;
+
+	block_width = 16;
+	block_height = 16;
+
+	block_num_per_row = ceil(1.0 * width / block_width); 
+	block_num_per_col = ceil(1.0 * height /  block_height);
+	block_num = block_num_per_row * block_num_per_col;
+	
+	frame_id = 0;
+
+	quantizationY = 10;
+	quantizationU = 5;
+	quantizationV = 5;
+
 }
 
 AVFormat::~AVFormat()
 {
 }
+
+void AVFormat::setValue(const string & key, const string & value){
+
+	if(key.compare("input_video") == 0){
+		strcpy(file_name,value.c_str());
+		
+	}else if(key.compare("output_video") == 0){
+		strcpy(out_file_name,value.c_str());
+	}else if(key.compare("stream_file_name") == 0){
+		strcpy(stream_file_name,value.c_str());
+	}else if(key.compare("height") == 0){
+		height = std::stoi(value);
+	}else if(key.compare("width") == 0){
+		width = std::stoi(value);
+	}else if(key.compare("block_width") == 0){
+		block_width = std::stoi(value);
+	}else if(key.compare("block_height") == 0){
+		block_height = std::stoi(value);
+	}else if(key.compare("quantizationY") == 0){
+		quantizationY = std::stod(value);
+	}else if(key.compare("quantizationU") == 0){
+		quantizationU = std::stod(value);
+	}else if(key.compare("quantizationV") == 0){
+		quantizationV = std::stod(value);
+	}else if(key.compare("fps")){
+		fps = std::stoi(value);
+	}else if(key.compare("frame_num") == 0){
+		frame_num = std::stoi(value);
+	}
+
+	block_num_per_row = (int)ceil(1.0 * width / block_width); 
+	block_num_per_col = (int)ceil(1.0 * height /  block_height);
+	block_num = block_num_per_row * block_num_per_col;
+
+}
+int AVFormat::load(const string & config_file ){
+	string line;
+	ifstream fin(config_file);
+	while(getline(fin,line)){
+		if(line[0] == '#') continue;
+		int index = line.find_first_of("=");
+		if(index == -1) continue;
+		setValue(line.substr(0,index),line.substr(index+1));
+	}
+
+
+	fin.close();
+	return 0;
+}
+
+int AVFormat::load(int argc, char * argv[]){
+	if(argc == 1) return 0;
+	for(int i = 1; i < argc-1; i += 2 ){
+		string key = argv[i];
+		key = key.substr(1);
+
+		string value = argv[i+1];
+		if(key.compare("config") == 0){
+			load(value);
+		}else{
+			setValue(key,value);
+		}
+	}
+	return 0;
+}
+
+
+
+
 
 void AVFormat::getBlockSize(Block::BlockType  block_type, int& height, int& width)
 {

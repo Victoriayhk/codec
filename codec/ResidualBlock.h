@@ -5,6 +5,7 @@
 #include "def.h"
 class Tree;
 class Node{
+	public:
 	/**
 	*  采用的预测方法
 	*  INTER_PREDICTION：帧间预测
@@ -35,7 +36,7 @@ class Node{
 	* 转换方式
 	*/
 	int convertion;
-public:
+
 
 	friend Tree;
 };
@@ -43,6 +44,7 @@ public:
 
 
 class Tree{
+public:
 	/**
 	* 子块数据
 	*/
@@ -72,16 +74,16 @@ class Tree{
 	/**
 	* 左上角相对坐标
 	*/
-	int left_top_h;
-	int left_top_w;
+	uint8_t left_top_h;
+	uint8_t left_top_w;
 	
 	/**
 	* 右下角相对坐标
 	*/
-	int right_bottom_h;
-	int right_bottom_w;
+	uint8_t right_bottom_h;
+	uint8_t right_bottom_w;
 
-public:
+	double score;
 	/**
 	* 提供当前节点表示的区域范围
 	*/
@@ -102,7 +104,7 @@ public:
 	int type_slice;
 	vector<int> node;
 	std::vector<int16_t> data;
-
+	bool is_tree;
 	/**
 	* 矩阵序列化顺序
 	*/
@@ -118,6 +120,9 @@ public:
 	* 子块划分树
 	*/
 	Tree tree;
+
+	Node node_list[128];
+	int curr_node;
 	
 public:
 	/**
@@ -126,10 +131,11 @@ public:
 	* width 宽度
 	*/
 	ResidualBlock();
+	ResidualBlock(const Block &);
 	ResidualBlock(int );
 	ResidualBlock(Block::BlockType type,int height , int width);
 	void getBlockSize(AVFormat &, int&, int&);
-
+	Node * get_node();
 	int to_stream(unsigned char *stream);
 	int from_stream(unsigned char *stream, int block_size);
 

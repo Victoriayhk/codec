@@ -56,6 +56,7 @@ public:
 	FILE* video;
 	FILE* out_video;
 	char file_name[100];
+	char out_file_name[100];
 	/**
 	*  视频的高度与宽度
 	*/
@@ -91,11 +92,21 @@ public:
 	double quantizationU;
 	double quantizationV;
 
+	/**
+	*  流文件写入写出文件
+	*/
+	char stream_file_name[100];
+	FILE* stream_writer;
+	FILE* stream_reader;
+
+
 	//视频编码各项参数
 public:
 	AVFormat();
 	~AVFormat();
-
+	int load(const string & config_file);
+	int load(int argc, char * argv[]);
+	void setValue(const string & key, const string & value);
 	void getBlockSize(Block::BlockType block_type, int& height, int& width);
 };
 

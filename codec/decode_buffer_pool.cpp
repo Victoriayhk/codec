@@ -21,6 +21,14 @@ int8_t BlockBufferPool::getValue(int h,int w){
 	return frame[h * width + w];
 }
 
+//void BlockBufferPool::set_block(Block & block,int tlh, int tlw, int brh, int brw,AVFormat &para){
+//	//TO DO
+//	int block_w, block_h;
+//	block.getBlockSize(para, block_w, block_h);
+//	int i_offset = (block.block_id / para.block_num_per_row) * block_h;	// 当前block的起始像素所在Frame的行
+//	int j_offset = (block.block_id % para.block_num_per_row) * block_w;
+//}
+
 
 int BlockBufferPool::clear(){
 	frame.clear();
