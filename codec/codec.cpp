@@ -2,13 +2,14 @@
 //
 
 
-#include "encode.h"
+#include "tree_encode.h"
 #include "def.h"
 #include "io.h"
 #include "quantization.h"
 #include "decode.h"
 #include <time.h>
 #include "Pattern.h"
+#include <omp.h>
 #include <iostream>
 
 int main(int argc, char * argv[])
@@ -29,6 +30,7 @@ int main(int argc, char * argv[])
 	para.video = fopen(para.file_name,"rb");
 	para.block_height = 16;
 	para.block_width = 16;
+
 	para.block_num_per_row = ceil(1.0 * para.width / para.block_width); 
 	para.block_num_per_col = ceil(1.0 * para.height /  para.block_height);
 	para.block_num = para.block_num_per_row * para.block_num_per_col;
@@ -58,11 +60,8 @@ int main(int argc, char * argv[])
 	yuv_read(para,frame);
 
 	int start_time=clock();
-
-	int errno1 = encode(frame,para,pkt,frame_pool);
 	int end_time=clock();
-
-	std::cout<< "Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
+	std::cout<< "Running time is: "<<static_cast<double>(end_time-start_time)<<"ms"<<std::endl;	
 
 	for(auto i =0; i != 8;++i){
 		printf("%d ",pkt.Ylist[0].data[i]);
