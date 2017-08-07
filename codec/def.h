@@ -89,6 +89,8 @@ public:
 	/**
 	* 宏块个数
 	*/
+	int block_num_per_row;
+	int block_num_per_col;
 	int block_num;
 	/**
 	*  当前frameid
@@ -156,5 +158,15 @@ public:
 	//}
 	int init(AVFormat& para);
 	~Frame();
+};
+
+
+struct pos{
+		int left_top_x;
+		int left_top_y;
+		int right_bottom_x;
+		int right_bottom_y; 
+		pos(){}
+		pos(int p1,int p2,int p3,int p4):left_top_x(p1),left_top_y(p2),right_bottom_x(p3),right_bottom_y(p4){} 
 };
 

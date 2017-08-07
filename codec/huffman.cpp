@@ -480,7 +480,18 @@ calculate_huffman_codes(SymbolFrequencies * pSF)
 	/* Build the SymbolEncoder array from the tree. */
 	pSE = (SymbolEncoder*)malloc(sizeof(SymbolEncoder));
 	memset(pSE, 0, sizeof(SymbolEncoder));
-	build_symbol_encoder((*pSF)[0], pSE);
+
+	//gaowk 2017/8/7 修改全0串进入时崩溃的bug
+	if((*pSF)[0]->isLeaf)
+	{
+		(*pSE)[(*pSF)[0]->symbol] = new_code((*pSF)[0]);
+		(*pSE)[(*pSF)[0]->symbol]->bits = (unsigned char*)malloc(1);
+		*(*pSE)[(*pSF)[0]->symbol]->bits = 1;
+		(*pSE)[(*pSF)[0]->symbol]->numbits = 1;
+	}
+	else
+		build_symbol_encoder((*pSF)[0], pSE);
+
 	return pSE;
 }
 
@@ -1066,6 +1077,8 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	int sign_size = (b_size + 7)*0.125;
 	uint8_t * tmp_stream = nullptr;
+	uint8_t* out_stream = nullptr;
+		//= (uint8_t*)malloc(1000000);
 	entropy_to_stream(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream);
 
 	uint8_t *p = tmp_stream;
@@ -1080,7 +1093,8 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	//free(tmp_stream);
 
 	unsigned int out_length;
-	int buff_length = huffman_encode_memory(tmp_stream, (b_size + sign_size) * sizeof(uint8_t), &tmp_stream, &out_length);
+	
+	int buff_length = huffman_encode_memory(tmp_stream, (b_size + sign_size) * sizeof(uint8_t), &out_stream, &out_length);
 
 	//for(int i = 0;i<out_length;++i)
 	//{
@@ -1098,9 +1112,10 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 
 	*stream = (uint8_t *)realloc(*stream,sizeof(unsigned int) + out_length * sizeof(uint8_t));
 	point = *stream + sizeof(unsigned int);
-	memcpy(point,tmp_stream,out_length);
+	memcpy(point,out_stream,out_length);
 
 	free(tmp_stream);
+	free(out_stream);
 
 	return out_length + sizeof(unsigned int);
 }
@@ -1145,6 +1160,11 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 	//uint8_t* memory = (uint8_t*)malloc((l_x-f_x) * (l_y-f_y) * sizeof(uint8_t) * 2);
 	//if(stream == nullptr)
 	*stream =(uint8_t*)malloc(sizeof(uint8_t) *(b_size + sign_size));
+
+	if(*stream == nullptr)
+	{
+		int a = 1;
+	}
 
 	uint8_t* memory = *stream;
 
@@ -1311,6 +1331,7 @@ int entropy_encode_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, u
 		//point += sizeof(code_stream_len);
 
 		point = (uint8_t *)memcpy(point,temp_stream,code_stream_len);
+
 		free(temp_stream);
 
 		//s_len[i] = len;

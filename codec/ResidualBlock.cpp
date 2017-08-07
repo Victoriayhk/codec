@@ -8,8 +8,11 @@ using namespace std;
 
 #define BASE_MALLOC_SIZE 360000
 
+ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height,width),block_type(type){
+	data.clear();
+	data.resize(width*height);
+}
 
-ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height,width),block_type(type),data(width * height){}
 
 ResidualBlock::ResidualBlock():tree(0,0,0,0)
 {
@@ -74,10 +77,16 @@ inline int get_from_buffer(T &val, unsigned char *buffer, int length) {
 */
 int ResidualBlock::to_stream(unsigned char *stream) {
 	unsigned char *p = stream;
-	//p += save_to_buffer(block_id, p);
-	//p += save_to_buffer(order, p);
-	//p += save_to_buffer(block_type, p);
-
+	p += save_to_buffer(block_id, p);
+	p += save_to_buffer(order, p);
+	p += save_to_buffer(block_type, p);
+	p += save_to_buffer(type_slice, p);
+	if(type_slice==0)
+		p += save_to_buffer(node[0], p);
+	if(type_slice==1){
+		for(int i=0;i<4;++i)
+			p += save_to_buffer(node[i], p);
+	}
 	short *pdata = data.data(); 
 
 
@@ -91,14 +100,34 @@ int ResidualBlock::to_stream(unsigned char *stream) {
 */
 int ResidualBlock::from_stream(unsigned char *stream, int block_size) {
 	unsigned char *p = stream;
-	//p += get_from_buffer(block_id, p);
-	//p += get_from_buffer(order, p);
-	//p += get_from_buffer(block_type, p);
-
+	p += get_from_buffer(block_id, p);
+	p += get_from_buffer(order, p);
+	p += get_from_buffer(block_type, p);
+	p += get_from_buffer(type_slice, p);
+	if(type_slice==0){
+		node.resize(1);
+		p += get_from_buffer(node[0], p);
+	}
+	if(type_slice==1){
+		node.resize(4);
+		for(int i=0;i<4;++i)
+			p += get_from_buffer(node[i], p);
+	}
 	data.resize(block_size);
 	short *pdata = data.data();
 	p += get_from_buffer(pdata, p, block_size * sizeof(data[0]));
 	return p - stream;
+}
+
+/*
+* 清空ResidualBlock,方便复用
+*/
+int ResidualBlock::clear()
+{
+	//data.clear();
+	node.clear();
+	//tree.clear();
+	return 0;
 }
 
 /**
@@ -230,7 +259,7 @@ int PKT::stream_write(AVFormat& para)
 	fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
 	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
 
-	free(tmp_head);
+	free(tmp_head_t);
 	free(tmp_stream);
 	
 	//对一帧的U数据进行熵编码

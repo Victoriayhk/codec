@@ -38,14 +38,13 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 
 	if(l_x>=width||l_y>=height) return -1;
 
+for(int i = f_x; i <= l_x ; ++i){
 	for(int j = f_y; j <= l_y ; ++j)
 	{
-		for(int i = f_x; i <= l_x ; ++i)
-		{
-			double tmp = round((double)block.data[i + width * j]/quantization_num);
-			block.data[i + width * j] = (int16_t)tmp;
-		}
+			double tmp = round((double)block.data[i*width +j]/quantization_num);
+			block.data[i*width +j] = (int16_t)tmp;
 	}
+}
 	return 0;
 }
 
@@ -76,13 +75,12 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 
 	if(l_x>=width||l_y>=height) return -1;
 
+for(int i = f_x; i <= l_x ; ++i)
+{
 	for(int j = f_y; j <= l_y ; ++j)
 	{
-		for(int i = f_x; i <= l_x ; ++i)
-		{
-
-			block.data[i + width * j] *= quantization_num;
-		}
+		block.data[i*width+ j] *= quantization_num;
 	}
+}
 	return 0;
 }
