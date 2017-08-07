@@ -7,5 +7,5 @@ quantizationV=15
 input_video=D:\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\youjiyingxiong.yuv
 #file_name=C:\\Users\\upperli\\Desktop\\00_2017_mini\\01_≤‚ ‘–Ú¡–\\dongman.yuv
 output_video=D:\\1234.yuv
-block_height=16;
-block_width=16;
+block_height=16
+block_width=16
