@@ -63,8 +63,8 @@ inline double dp_encode_one_block(Block & block, ResidualBlock & residual_block,
 	tree.score = DBL_MAX;
 	
 	//Node * node = new Node;
-	Node node;
-	tree.data = &node;
+	Node *node = residual_block.get_node();
+	tree.data = node;
 
 
 	score0 = search_predict_pattern(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para);
@@ -88,7 +88,8 @@ inline double dp_encode_one_block(Block & block, ResidualBlock & residual_block,
 		tree.split_direction = Tree::NONE;
 		tree.score = score0;
 	}else{
-		delete tree.data;
+		//residual_block
+		//delete tree.data;
 		tree.data = nullptr;
 		if(score1 < score2){
 			tree.score = score1;
@@ -115,7 +116,10 @@ inline int tree_encode_one_block(Block & block,ResidualBlock & residual_block,Bl
 	
 	int h,w;
 	block.getBlockSize(para,h,w);
-
+	residual_block.curr_node = 0;
+	//residual_block.tree.left = nullptr;
+	//residual_block.tree.right = nullptr;
+	//residual_block.tree.node = nullptr;
 	dp_encode_one_block(block, residual_block, residual_block.tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
 
 
@@ -142,7 +146,7 @@ int tree_encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &f
 	static Block block_buffer[3] = {Block(frame.Yblock[0]),Block(frame.Ublock[0]),Block(frame.Vblock[0])};
 	static ResidualBlock residual_block_buffer[3] = {ResidualBlock(frame.Yblock[0]),ResidualBlock(frame.Ublock[0]),ResidualBlock(frame.Vblock[0])};
 	double start_time = omp_get_wtime( );
-#pragma omp parallel sections num_threads(16)
+#pragma omp parallel sections num_threads(2)
 	{	
 	#pragma omp section
 	{

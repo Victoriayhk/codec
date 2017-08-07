@@ -116,6 +116,9 @@ public:
 	* ×Ó¿é»®·ÖÊ÷
 	*/
 	Tree tree;
+
+	Node node_list[128];
+	int curr_node;
 	
 public:
 	/**
@@ -128,7 +131,7 @@ public:
 	ResidualBlock(int );
 	ResidualBlock(Block::BlockType type,int height , int width);
 	void getBlockSize(AVFormat &, int&, int&);
-
+	Node * get_node();
 	int to_stream(unsigned char *stream);
 	int from_stream(unsigned char *stream, int block_size);
 };

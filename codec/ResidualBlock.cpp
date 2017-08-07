@@ -3,23 +3,25 @@
 
 
 
-ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type),data(width * height){}
+ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),curr_node(0),block_type(type),data(width * height){}
 
 ResidualBlock::ResidualBlock():tree(0,0,0,0)
 {
 }
 
 ResidualBlock::ResidualBlock(int blocktype):
-	tree(0,0,0,0)
+	tree(0,0,0,0),curr_node(0)
 {
 	block_type = (Block::BlockType)blocktype;
 }
-ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),data(block.data.size()){
+ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),curr_node(0),data(block.data.size()){
 	block_id = block.block_id;
 	block_type = block.block_type;
 	//tree = tree(0,0,height,width);
 }
-
+Node * ResidualBlock::get_node(){
+	return &node_list[curr_node++];
+}
 void ResidualBlock::getBlockSize(AVFormat &para, int& height, int& width)
 {
 	if(block_type == Block::Y)

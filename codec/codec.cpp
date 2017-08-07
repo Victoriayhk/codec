@@ -55,12 +55,12 @@ int main(int argc, char * argv[])
 	yuv_read(para,frame);
 
 
-	//int start_time=clock();
-	double start_time = omp_get_wtime( );
+	int start_time=clock();
+	//double start_time = omp_get_wtime( );
 	int errno1 = tree_encode(frame,para,pkt,frame_pool);
-	//int end_time=clock();
-	double end_time = omp_get_wtime( );
-	std::cout<< "Running time is: "<<static_cast<double>(end_time-start_time)<<"s"<<std::endl;	
+	int end_time=clock();
+	//double end_time = omp_get_wtime( );
+	std::cout<< "Running time is: "<<static_cast<double>(end_time-start_time)<<"ms"<<std::endl;	
 
 	for(auto i =0; i != 8;++i){
 		printf("%d ",pkt.Ylist[0].data[i]);
