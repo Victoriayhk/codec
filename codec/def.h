@@ -3,7 +3,6 @@
 
 #include <list>
 #include <vector>
-//#include "ResidualBlock.h"
 
 using namespace std;
 
@@ -41,6 +40,7 @@ public:
 public:
 	Block();
 	Block(int h , int w);
+	Block(Block::BlockType type,int height , int width);
 	void getBlockSize(AVFormat &para,int &height, int &width);
 
 	void print(AVFormat &para);
@@ -49,13 +49,26 @@ public:
 
 class AVFormat	//视频基本信息以及视频编码各项参数
 {
+public:
 	/**
 	*  视频名称
 	*/
-public:
+	char file_name[100];
+
+	/**
+	*  视频写入写出文件
+	*/
 	FILE* video;
 	FILE* out_video;
-	char file_name[100];
+
+	/**
+	*  流文件写入写出文件
+	*/
+	char stream_file_name[100];
+	FILE* stream_writer;
+	FILE* stream_reader;
+
+
 	/**
 	*  视频的高度与宽度
 	*/
@@ -73,7 +86,10 @@ public:
 	*/
 	int block_width;
 	int block_height;
-
+	/**
+	* 宏块个数
+	*/
+	int block_num;
 	/**
 	*  当前frameid
 	*/
@@ -86,13 +102,17 @@ public:
 	double quantizationU;
 	double quantizationV;
 
+	/**
+	*  熵编码一次作用的宏块数目
+	*/
+	static const int entropy_silce_size = 256;
+
 	//视频编码各项参数
 public:
 	AVFormat();
 	~AVFormat();
 
-	void getBlockSize(Block& block, int& height, int& width);
-	//void getBlockSize(ResidualBlock& rblock, int& height, int& width);
+	void getBlockSize(Block::BlockType block_type, int& height, int& width);
 };
 
 struct Frame	//视频帧信息
@@ -134,21 +154,7 @@ public:
 	//	Ublock.resize(h*w/block_h/block_w/4,nullptr);
 	//	Vblock.resize(h*w/block_h/block_w/4,nullptr);
 	//}
+	int init(AVFormat& para);
 	~Frame();
 };
 
-//class PKT
-//{
-//public:
-//	list<Block> Ylist;
-//	list<Block> Ulist;
-//	list<Block> Vlist;
-//
-//	~PKT()
-//	{
-//	}
-//
-//	//Block *Yblock;
-//	//Block *Ublock;
-//	//Block *Vblock;
-//};

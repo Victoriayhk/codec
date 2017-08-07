@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cstring>
 #include <assert.h>
 #include <iostream>
 #include "huffman.h"
 #include<bitset>
-#include <vector>
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -1061,19 +1061,48 @@ int huffman_decode_memory(const unsigned char *bufin,
 	return 0;
 }
 
-int entropy_coding_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream, unsigned int* buff_length)
+int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream)
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	int sign_size = (b_size + 7)*0.125;
+	uint8_t * tmp_stream = nullptr;
+	entropy_to_stream(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream);
 
-	entropy_to_stream(f_x,f_y,l_x,l_y,rBlock, para, stream);
+	uint8_t *p = tmp_stream;
+	//cout<<endl;
+	//for(int i = 0;i<b_size + sign_size;++i)
+	//{
+	//	cout<<(int)(*p)<<" ";
+	//	++p;
+	//}
+	//cout<<endl;
+
+	//free(tmp_stream);
 
 	unsigned int out_length;
+	int buff_length = huffman_encode_memory(tmp_stream, (b_size + sign_size) * sizeof(uint8_t), &tmp_stream, &out_length);
 
-	*buff_length = huffman_encode_memory(*stream, (b_size + sign_size) * sizeof(uint8_t), stream, &out_length);
-	*buff_length = out_length;
+	//for(int i = 0;i<out_length;++i)
+	//{
+	//	cout<<(int)tmp_stream[i]<<" ";
+	//}
+	//cout<<endl;
 
-	return out_length;
+	//free(tmp_stream);
+
+	*stream = (uint8_t *)malloc(sizeof(unsigned int));
+	uint8_t *point = *stream;
+	//sprintf((char *)point, "%x", out_length);
+	toch4(out_length,point);
+	//point += sizeof(unsigned int);
+
+	*stream = (uint8_t *)realloc(*stream,sizeof(unsigned int) + out_length * sizeof(uint8_t));
+	point = *stream + sizeof(unsigned int);
+	memcpy(point,tmp_stream,out_length);
+
+	free(tmp_stream);
+
+	return out_length + sizeof(unsigned int);
 }
 
 void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlock, int width)
@@ -1086,27 +1115,37 @@ void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlo
 	rBlock.data[x+ y*width] = -rBlock.data[x+ y*width];
 }
 
-int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, unsigned int buff_length)
+int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length)
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	int sign_size = (b_size + 7) *0.125;
 
-	uint8_t* sign_flag = (uint8_t *)malloc(sizeof(uint8_t) * (b_size + sign_size));
-	uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
+	//uint8_t* sign_flag = (uint8_t *)malloc(sizeof(uint8_t) * (b_size + sign_size));
+	//uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
+
 	//uint8_t* p = sign_flag;
 	unsigned int out_length;
 
-	huffman_decode_memory(stream,buff_length,&sign_flag,&out_length);
-	entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,sign_flag);
+	//for(int i = 0;i<95;++i)
+	//{
+	//	cout<<(int)stream[i]<<" ";
+	//}
+	//cout<<endl;
+
+	huffman_decode_memory(stream,buff_length,&stream,&out_length);
+	entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,stream);
 	return 0;
 }
+
 
 int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream )
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	int sign_size = (b_size + 7)*0.125;
 	//uint8_t* memory = (uint8_t*)malloc((l_x-f_x) * (l_y-f_y) * sizeof(uint8_t) * 2);
+	//if(stream == nullptr)
 	*stream =(uint8_t*)malloc(sizeof(uint8_t) *(b_size + sign_size));
+
 	uint8_t* memory = *stream;
 
 	uint8_t* sign_flag = memory;
@@ -1166,6 +1205,8 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 		sign_num = sign_num<<(8-sign_num);
 	}
 
+
+
 	return 1;
 }
 
@@ -1196,13 +1237,13 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 	//	cout<<endl;
 	//}
 	//cout<<endl;
-	cout<<endl;
-	for(int i = 0;i<b_size + sign_size;++i)
-	{
-		cout<<(int)(*p)<<" ";
-		++p;
-	}
-	cout<<endl;
+	//cout<<endl;
+	//for(int i = 0;i<b_size + sign_size;++i)
+	//{
+	//	cout<<(int)(*p)<<" ";
+	//	++p;
+	//}
+	//cout<<endl;
 
 	p = sign_flag + sign_size * sizeof(uint8_t);
 
@@ -1240,125 +1281,205 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 	return 0;
 }
 
-void entropy_test()
-{
-	AVFormat para;
-	para.block_width = 16;
-	para.block_height = 16;
-	ResidualBlock rblock[4];
-	ResidualBlock rblock2(8,8);
-	rblock2.block_type = Block::U;
-
-	for(int i = 0;i<8;++i)
-		{
-			for(int j=0;j<8;++j)
-			{
-				int flag = 1;
-				if(i%2 == 0) flag = -1;
-				if(j<8) rblock2.data[i* 8 + j] = 0;
-				else 
-				rblock2.data[i* 8 + j] = (i+j)*flag;
-			}
-		}
-
-	for(int k=0;k<BLOCK_NUM;++k)
-	{
-		rblock[k] = ResidualBlock(8,8);
-		rblock[k].block_type = Block::U;
-		for(int i = 0;i<8;++i)
-		{
-			for(int j=0;j<8;++j)
-			{
-				int flag = 1;
-				if(i%2 == 0) flag = -1;
-				if(j<8) rblock[k].data[i* 8 + j] = 0;
-				else 
-				rblock[k].data[i* 8 + j] = (i+j)*flag;
-			}
-		}
-	}
-
-	for(int k=0;k<BLOCK_NUM;++k)
-	{
-		for(int i = 0;i<8;++i)
-		{
-			for(int j=0;j<8;++j)
-			{
-				cout<<rblock[k].data[i*8+j]<<" ";
-			}
-			cout<<endl;
-		}
-		cout<<endl;
-	}
-	cout<<endl<<endl;
-
-	int f_x = 0,f_y = 0,l_x = 7,l_y = 7;
-	//cin>>f_x>>f_y>>l_x>>l_y;
-	uint8_t* stream = nullptr;
-	unsigned int len = 0;
-
-	//entropy_coding_slice(rblock, BLOCK_NUM, para, &stream , &len);
-	//entropy_decode_slice(rblock, BLOCK_NUM, para, stream, len);
-	int len2 = entropy_coding_block(f_x,f_y,l_x,l_y,rblock2,para,&stream,&len);
-	entropy_decode_block(f_x,f_y,l_x,l_y,rblock2,para,stream,len);
-
-	for(int k=0;k<BLOCK_NUM;++k)
-	{
-		for(int i = 0;i<8;++i)
-		{
-			for(int j=0;j<8;++j)
-			{
-				cout<<rblock[k].data[i*8+j]<<" ";
-			}
-			cout<<endl;
-		}
-		cout<<endl;
-	}
-	cout<<endl<<endl;
-}
-
-int entropy_coding_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream, unsigned int* len)
+int entropy_encode_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream, unsigned int* len)
 {
 	int height,width;
 	rBlock[0].getBlockSize(para,height,width);
 
-	int b_size = width * height;
-	int sign_size = (b_size + 7) *0.125;
+	//int b_size = width * height;
+	//int sign_size = (b_size + 7) *0.125;
 
-	int newlen = 0;
+	int stream_len = sizeof(unsigned int);
 
-	*stream = (uint8_t*)malloc(block_len * (b_size + sign_size) * sizeof(uint8_t));
-	uint8_t* point = *stream;
-	s_len = new unsigned int[3600];
+	*stream = (uint8_t*)malloc(sizeof(unsigned int));
+	uint8_t* point = *stream + sizeof(unsigned int);
+	//s_len = new unsigned int[3600];
 
 	for(int i = 0 ;i < block_len ; ++i)
 	{
-		unsigned int len = 0;
-		entropy_coding_block(0,0,width-1,height-1,rBlock[i],para, &point,&len);
+		unsigned int code_stream_len = 0;
+		uint8_t* temp_stream = nullptr;
+		code_stream_len = entropy_encode_block(0,0,width-1,height-1,rBlock[i],para, &temp_stream);
+		
+		int point_diif = point - *stream;
 
-		s_len[i] = len;
+		*stream = (uint8_t*)realloc(*stream, code_stream_len + stream_len);
 
-		point += len;
-		newlen += len;
+		point = *stream + point_diif;
+
+		//toch4(code_stream_len,point);
+		//point += sizeof(code_stream_len);
+
+		point = (uint8_t *)memcpy(point,temp_stream,code_stream_len);
+		free(temp_stream);
+
+		//s_len[i] = len;
+		
+
+		point += code_stream_len;
+		stream_len += code_stream_len;
 	}
 
-	*len = newlen;
+	point = *stream;
+	toch4(stream_len - 4,point);
+	//stream_len += sizeof(unsigned int);
+	//sprintf((char *)*stream, "%x", stream_len);
+
+	*len = stream_len;
 
 	return 0;
 }
 
-int entropy_decode_slice(ResidualBlock* rBlock,int block_len , AVFormat& para, uint8_t *stream, unsigned int buff_length)
+int entropy_decode_slice(ResidualBlock* rBlock,int block_num , AVFormat& para, uint8_t *stream, unsigned int buff_length)
 {
 	int height,width;
 	rBlock[0].getBlockSize(para,height,width);
 
 	uint8_t* p = stream;
 
-	for(int i = 0 ;i < block_len ; ++i)
+	for(int i = 0 ;i < block_num ; ++i)
 	{
-		entropy_decode_block(0,0,height-1,width-1,rBlock[i],para,p,s_len[i]);
-		p += s_len[i];
+		int block_len = 0;
+		fromch4(block_len,p);
+		
+		p += sizeof(unsigned int);
+
+		entropy_decode_block(0,0,height-1,width-1,rBlock[i],para,p,block_len);
+		p += block_len;
 	}
 
 	return 0;
+}
+
+int entropy_encode_pkt(PKT& pkt, AVFormat& para, uint8_t **stream, unsigned int *len)
+{
+	*stream = (uint8_t *)malloc(sizeof(unsigned int));
+	uint8_t * point = *(stream + 1);
+
+	int i = 0;
+	int s_len = sizeof(unsigned int);
+	int s_remind_len = 0;
+	ResidualBlock* rBlock = pkt.Ylist.data();
+	int block_num = para.height * para.width / para.block_height / para.block_width;
+	while(i<block_num)
+	{
+		unsigned int len;
+		uint8_t* temp;
+		entropy_encode_slice(rBlock, AVFormat::entropy_silce_size, para, &temp ,&len);
+		i += AVFormat::entropy_silce_size;
+		//point += len;
+
+		if(s_remind_len < len)
+		{
+			s_len += len;
+			*stream = (uint8_t *)realloc(*stream, s_len);
+		}
+
+		memcpy(point,temp,len);
+		free(temp);
+		point += len;
+	}
+
+	i = 0;
+	while(i<block_num)
+	{
+		unsigned int len;
+		uint8_t* temp;
+		entropy_encode_slice(rBlock, AVFormat::entropy_silce_size, para, &temp ,&len);
+		i += AVFormat::entropy_silce_size;
+		//point += len;
+
+		if(s_remind_len < len)
+		{
+			s_len += len;
+			*stream = (uint8_t *)realloc(*stream, s_len);
+		}
+
+		memcpy(point,temp,len);
+		free(temp);
+		point += len;
+	}
+
+	i = 0;
+	while(i<block_num)
+	{
+		unsigned int len;
+		uint8_t* temp;
+		entropy_encode_slice(rBlock, AVFormat::entropy_silce_size, para, &temp ,&len);
+		i += AVFormat::entropy_silce_size;
+		//point += len;
+
+		if(s_remind_len < len)
+		{
+			s_len += len;
+			*stream = (uint8_t *)realloc(*stream, s_len);
+		}
+
+		memcpy(point,temp,len);
+		free(temp);
+		point += len;
+	}
+
+	return 0;
+}
+
+//template<typename T>
+//void toch4(T val, uint8_t* result)	// 将任意类型的数转化为uint8_t的数组
+//{
+//	int len = sizeof(T);
+//	for(int i = 0;i<len;++i)
+//	{
+//		result[i] = (uint8_t)(val>>(8*(len-i -1)) & 0x000000ff);
+//	}
+//}
+//
+//template<typename T>
+//void fromch4(T& result, uint8_t* val)	// 将任意类型的数转化为uint8_t的数组
+//{
+//	result = 0;
+//	int len = sizeof(T);
+//	for(int i = 0;i<len;++i)
+//	{
+//		result <<= 8;
+//		result |= val[i];
+//	}
+//}
+//
+//void fromch4(unsigned int& result, uint8_t* val)
+//{
+//	result = 0;
+//	int len = sizeof(unsigned int);
+//	for(int i = 0;i<len;++i)
+//	{
+//		result <<= 8;
+//		result |= val[i];
+//	}
+//}
+
+void head_test()
+{
+	AVFormat para;
+	para.block_num = 10;
+	para.height = 1280;
+	para.width = 720;
+	para.block_height = 16;
+	para.block_width = 16;
+	PKT pkt;
+	pkt.init(para);
+	ResidualBlock rblock,rblock2;
+	rblock.block_id = 1;
+	//rblock.block_type = 2;
+	rblock.order = 3;
+	rblock.type_slice = 2;
+	for(int i = 0 ; i< 10;++i)
+	{
+		rblock.node.push_back(i*i);
+	}
+
+	uint8_t *stream = nullptr;
+	int len,head_len;
+
+	pkt.block_head2stream(para,&stream,rblock,&len);
+
+	pkt.block_stream2head(para,stream,rblock2,len,&head_len);
 }

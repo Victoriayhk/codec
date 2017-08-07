@@ -10,7 +10,7 @@ double round(double val)
     return (val> 0.0) ? floor(val+ 0.5) : ceil(val- 0.5);
 }
 
-int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFormat& avFormat)
+int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFormat avFormat)
 {
 	if(f_x>=l_x||f_y>=l_y) return -1;
 
@@ -49,7 +49,7 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 	return 0;
 }
 
-int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFormat& avFormat)
+int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFormat avFormat)
 {
 	if(f_x>=l_x||f_y>=l_y) return -1;
 

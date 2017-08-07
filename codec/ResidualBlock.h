@@ -96,6 +96,8 @@ class ResidualBlock
 	*/
 public:
 	int block_id;
+	int type_slice;
+	vector<int> node;
 
 	std::vector<int16_t> data;
 
@@ -123,7 +125,7 @@ public:
 	*/
 	ResidualBlock();
 	ResidualBlock(int );
-	ResidualBlock(int height , int width);
+	ResidualBlock(Block::BlockType type,int height , int width);
 	void getBlockSize(AVFormat &, int&, int&);
 
 	int to_stream(unsigned char *stream);
@@ -136,7 +138,17 @@ public:
 	std::vector<ResidualBlock> Ylist;
 	std::vector<ResidualBlock> Ulist;
 	std::vector<ResidualBlock> Vlist;
-
+	
+public:
+	int reserve(int size);
+	int init(AVFormat& para);
+	//PKT()
 	int to_stream(unsigned char *stream);
 	int from_stream(unsigned char *stream, AVFormat &para);
+
+	int stream_write(AVFormat& para);
+	int stream_read(AVFormat& para);
+
+	int block_head2stream(AVFormat& para,uint8_t** stream, ResidualBlock& rBlock, int *buff_len);
+	int block_stream2head(AVFormat& para, uint8_t* stream, ResidualBlock& rBlock, int buff_len, int *head_length);
 };

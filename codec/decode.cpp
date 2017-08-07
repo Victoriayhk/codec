@@ -20,17 +20,12 @@ inline int decode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 	return 0;
 }
 inline int decode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,AVFormat &para,FrameBufferPool & frame_pool){
-	BlockBufferPool  decode_buffer(para.height,para.width);
-	//ResidualBlock residual_block(para.block_height,para.block_width);
-	for(int i=0;i< residual_blocks.size();++i){
-		//ResidualBlock residual_block(para.block_height,para.block_width);
-		Block block(residual_blocks[i].data.size(),1);
-		decode_one_block(block,residual_blocks[i],para,decode_buffer,frame_pool);
-		//decode_one_block(blocks[i],residual_block,para,decode_buffer,frame_pool);
 
-		//residual_blocks.push_back(residual_block);
-		//residual_block.data.clear();
-		blocks.push_back(block);
+	BlockBufferPool   * decode_buffer = new BlockBufferPool(para.height,para.width);
+	int h,w;
+	residual_blocks[0].getBlockSize(para,h,w);
+	for(int i=0;i< residual_blocks.size();++i){
+		decode_one_block(blocks[i],residual_blocks[i],para,*decode_buffer,frame_pool);
 	}
 	frame_pool.add_frame_to_pool(decode_buffer);
 	return 0;
@@ -38,7 +33,7 @@ inline int decode_one_component(vector<Block> & blocks, std::vector<ResidualBloc
 }
 int decode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool){
 	decode_one_component(frame.Yblock,pkt.Ylist,para,frame_pool[0]);
-	decode_one_component(frame.Ublock,pkt.Ulist,para,frame_pool[0]);
-	decode_one_component(frame.Vblock,pkt.Vlist,para,frame_pool[0]);
+	decode_one_component(frame.Ublock,pkt.Ulist,para,frame_pool[1]);
+	decode_one_component(frame.Vblock,pkt.Vlist,para,frame_pool[2]);
 	return 0;
 }
