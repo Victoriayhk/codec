@@ -8,6 +8,8 @@ using namespace std;
 
 #define BASE_MALLOC_SIZE 360000
 
+uint8_t* PKT::stream_buff = nullptr;
+
 ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type){
 	data.clear();
 	data.resize(width*height);
@@ -223,11 +225,11 @@ int PKT::stream_write(AVFormat& para)
 	unsigned int stream_len;
 	int block_num = para.width*para.height/para.block_height/para.block_width;
 
-	int start_time=clock();
+	//int start_time=clock();
 	entropy_encode_slice(Ylist.data(),block_num,para,&tmp_stream,&len);
-	int end_time=clock();
+	//int end_time=clock();
 
-	std::cout<< "Stream wirte Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
+	//std::cout<< "Stream wirte Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
 
 	for(int i = 0;i<Ylist.size();++i)
 	{
@@ -361,8 +363,10 @@ int PKT::stream_write(AVFormat& para)
 */
 int PKT::stream_read(AVFormat& para)
 {
-	uint8_t *tmp_stream;
+	if(stream_buff == nullptr)
+		stream_buff = (uint8_t*)malloc(1000000);
 	uint8_t *tmp_head;
+	uint8_t stream_len[4];
 
 	int head_len;
 	
@@ -405,14 +409,14 @@ int PKT::stream_read(AVFormat& para)
 		free(tmp_head);
 	}
 
-	fread(temp_len,1,4,para.stream_reader);
-	fromch4(len,temp_len);
-	tmp_stream = (uint8_t *)malloc(len);
-	fread(tmp_stream,1,len,para.stream_reader);
+	fread(stream_len,1,4,para.stream_reader);
+	fromch4(len,stream_len);
+	//tmp_stream = (uint8_t *)malloc(len);
+	fread(stream_buff,1,len,para.stream_reader);
 
 
-	entropy_decode_slice(Ylist.data(),block_num,para,tmp_stream,len);
-	free(tmp_stream);
+	entropy_decode_slice(Ylist.data(),block_num,para,stream_buff,len);
+	//free(tmp_stream);
 
 	for(int i = 0;i<para.block_num;++i)
 	{
@@ -428,13 +432,13 @@ int PKT::stream_read(AVFormat& para)
 		free(tmp_head);
 	}
 
-	fread(temp_len,1,4,para.stream_reader);
-	fromch4(len,temp_len);
-	tmp_stream = (uint8_t *)malloc(len);
-	fread(tmp_stream,1,len,para.stream_reader);
+	fread(stream_len,1,4,para.stream_reader);
+	fromch4(len,stream_len);
+	//tmp_stream = (uint8_t *)malloc(len);
+	fread(stream_buff,1,len,para.stream_reader);
 
-	entropy_decode_slice(Ulist.data(),block_num,para,tmp_stream,len);
-	free(tmp_stream);
+	entropy_decode_slice(Ulist.data(),block_num,para,stream_buff,len);
+	//free(tmp_stream);
 
 	for(int i = 0;i<para.block_num;++i)
 	{
@@ -450,13 +454,13 @@ int PKT::stream_read(AVFormat& para)
 		free(tmp_head);
 	}
 
-	fread(&temp_len,1,4,para.stream_reader);
-	fromch4(len,temp_len);
-	tmp_stream = (uint8_t *)malloc(len);
-	fread(tmp_stream,1,len,para.stream_reader);
+	fread(stream_len,1,4,para.stream_reader);
+	fromch4(len,stream_len);
+	//tmp_stream = (uint8_t *)malloc(len);
+	fread(stream_buff,1,len,para.stream_reader);
 
-	entropy_decode_slice(Vlist.data(),block_num,para,tmp_stream,len);
-	free(tmp_stream);
+	entropy_decode_slice(Vlist.data(),block_num,para,stream_buff,len);
+	//free(tmp_stream);
 
 	return 0;
 }

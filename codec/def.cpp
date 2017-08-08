@@ -60,7 +60,7 @@ void AVFormat::setValue(const string & key, const string & value){
 		quantizationU = std::stod(value);
 	}else if(key.compare("quantizationV") == 0){
 		quantizationV = std::stod(value);
-	}else if(key.compare("fps")){
+	}else if(key.compare("fps")==0){
 		fps = std::stoi(value);
 	}else if(key.compare("frame_num") == 0){
 		frame_num = std::stoi(value);
