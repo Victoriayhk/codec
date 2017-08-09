@@ -5,21 +5,9 @@
 #include "predict.h"
 #include "Pattern.h"
 #include "quantization.h"
+#include "dctInterface.h"
 
 
-
-int predict_block_inter(Block &block, ResidualBlock  &mode_result, BlockBufferPool &pool,double &score){
-	//mode_result.data = block.data;
-	score = 0;
-	return 0;
-}
-
-int predict_block_intra(Block &block, ResidualBlock  &mode_result, FrameBufferPool &pool,double &score){
-	//mode_result = block;
-
-	score = 0;
-	return 0;
-}
 int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,double & min_score)
 {
 
@@ -42,15 +30,19 @@ double intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,Bloc
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	double score = min_score;
 	for(int i = 0; i < pattern_num; ++i){
-		Pattern::predict(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,i,para);
+		score = Pattern::predict(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,i,para);
+
+		//dct_trans(residual_block,tph,tpw,brh,brw,brh - tph + 1,brw - tpw + 1);
 
 		quantization(tph,tpw,brh,brw, residual_block , para);
 
 		Reverse_quantization(tph,tpw,brh,brw , residual_block , para);
+		
+		//reverse_dct_trans(residual_block,tph,tpw,brh,brw,brh - tph + 1,brw - tpw + 1);
 
 		Pattern::de_predict(buffer_block,residual_block,tph,tpw,brh,brw ,block_buffer_pool,i,para);
 		
-		score = calc_coef(tph,tpw,brh,brw,buffer_block,block);
+		score += calc_coef(tph,tpw,brh,brw,buffer_block,block);
 		if(score < min_score){
 			min_score = score;
 			tree.data->pre_type = Node::INTRA_PREDICTION;
@@ -71,7 +63,7 @@ double search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &
 	return score;
 }
 
-int reverse_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para){
+int reverse_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,AVFormat & para){
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	if(tree.data->pre_type == Node::INTRA_PREDICTION){
 		Pattern::de_predict(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,tree.data->prediction,para);

@@ -9,6 +9,8 @@
 #include "Pattern.h"
 #include "tree_encode.h"
 #include <omp.h>
+#include "dctInterface.h"
+
 using namespace std;
 
 
@@ -36,15 +38,15 @@ int encode_and_decode_with_tree(Block & block, ResidualBlock & residual_block,Tr
 		predict(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para,score0);
 
 		int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
+		dct_trans(residual_block,tph,tpw,brh,brw,brh - tph + 1,brw - tpw + 1);
 		quantization(tph,tpw, brh, brw , residual_block , para);
 
 		residual_block_buffer.data = residual_block.data;
 
 		Reverse_quantization(tph,tpw, brh, brw , residual_block_buffer , para);
+		reverse_dct_trans(residual_block,tph,tpw,brh,brw,brh - tph + 1,brw - tpw + 1);
+		reverse_predict(block_buffer,residual_block_buffer,tree,block_buffer_pool,frame_pool,para);
 
-		reverse_predict(block_buffer,residual_block_buffer,tree,block_buffer_pool,frame_pool,block_buffer,para);
-
-		//block_buffer_pool.set_block(block_buffer,tree.left_top_h,tree.left_top_w,tree.right_bottom_h,tree.right_bottom_w);
 	}else{
 
 			encode_and_decode_with_tree(block, residual_block, *tree.left, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
@@ -63,13 +65,15 @@ inline double dp_encode_one_block(Block & block, ResidualBlock & residual_block,
 	tree.score = DBL_MAX;
 	
 	//Node * node = new Node;
-	Node *node = residual_block.get_node();
-	tree.data = node;
+	int node_id = 0;
+	Node &node = residual_block.get_node(node_id);
+	tree.node_id = node_id;
+	tree.data = & node;
 
 
 	score0 = search_predict_pattern(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para);
 	int w = tree.right_bottom_w - tree.left_top_w + 1;
-	int h = tree.left_top_h - tree.right_bottom_h;
+	int h = tree.left_top_h - tree.right_bottom_h + 1;
 
 	Tree * left, * right;
 	Tree * left2, * right2;
@@ -90,7 +94,7 @@ inline double dp_encode_one_block(Block & block, ResidualBlock & residual_block,
 	}else{
 		//residual_block
 		//delete tree.data;
-		tree.data = nullptr;
+		tree.node_id = -1;
 		if(score1 < score2){
 			tree.score = score1;
 			tree.left = left;
@@ -111,15 +115,13 @@ inline double dp_encode_one_block(Block & block, ResidualBlock & residual_block,
 
 inline int tree_encode_one_block(Block & block,ResidualBlock & residual_block,Block & block_buffer,ResidualBlock & residual_block_buffer,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
 
-	residual_block.block_id = block.block_id;
-	residual_block.block_type = block.block_type;
+	block.block_id = residual_block.block_id;
+	block.block_type = residual_block.block_type;
 	
 	int h,w;
 	block.getBlockSize(para,h,w);
 	residual_block.curr_node = 0;
-	//residual_block.tree.left = nullptr;
-	//residual_block.tree.right = nullptr;
-	//residual_block.tree.node = nullptr;
+
 	dp_encode_one_block(block, residual_block, residual_block.tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
 
 
@@ -127,46 +129,42 @@ inline int tree_encode_one_block(Block & block,ResidualBlock & residual_block,Bl
 }
 inline int tree_encode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,Block & block_buffer,ResidualBlock & residual_block_buffer,AVFormat &para,FrameBufferPool & frame_pool){
 
-	BlockBufferPool   * decode_buffer = new BlockBufferPool(para.height,para.width);
+	BlockBufferPool & decode_buffer = frame_pool.new_back();
 	int block_height,block_width;
 	block_buffer.getBlockSize(para,block_height,block_width);
 	
 	for(int i=0;i<blocks.size();++i){
 		
-		tree_encode_one_block(blocks[i],residual_blocks[i],block_buffer,residual_block_buffer,para,*decode_buffer,frame_pool);
+		tree_encode_one_block(blocks[i],residual_blocks[i],block_buffer,residual_block_buffer,para,decode_buffer,frame_pool);
 		
 	}
-	frame_pool.add_frame_to_pool(decode_buffer);
+
 	return 0;
 
 }
-int tree_encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool){
+int tree_encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool*>  &frame_pool){
 
 	dp.clear();
 	static Block block_buffer[3] = {Block(frame.Yblock[0]),Block(frame.Ublock[0]),Block(frame.Vblock[0])};
 	static ResidualBlock residual_block_buffer[3] = {ResidualBlock(frame.Yblock[0]),ResidualBlock(frame.Ublock[0]),ResidualBlock(frame.Vblock[0])};
-	double start_time = omp_get_wtime( );
-#pragma omp parallel sections num_threads(2)
+
+	#pragma omp parallel sections num_threads(3)
 	{	
-	#pragma omp section
-	{
-		printf("%d\n",omp_get_thread_num());
-		tree_encode_one_component(frame.Yblock,pkt.Ylist,block_buffer[0],residual_block_buffer[0],para,frame_pool[0]);
-	}	
-	#pragma omp section
-	{
-		printf("%d\n",omp_get_thread_num());
-		tree_encode_one_component(frame.Ublock,pkt.Ulist,block_buffer[1],residual_block_buffer[1],para,frame_pool[1]);
+		#pragma omp section
+		{
+			tree_encode_one_component(frame.Yblock,pkt.Ylist,block_buffer[0],residual_block_buffer[0],para,*frame_pool[0]);
+		}	
+		#pragma omp section
+		{
+			tree_encode_one_component(frame.Ublock,pkt.Ulist,block_buffer[1],residual_block_buffer[1],para,*frame_pool[1]);
+		}
+		#pragma omp section
+		{
+			tree_encode_one_component(frame.Vblock,pkt.Vlist,block_buffer[2],residual_block_buffer[2],para,*frame_pool[2]);
+		}
 	}
-	#pragma omp section
-	{
-		printf("%d\n",omp_get_thread_num());
-		tree_encode_one_component(frame.Vblock,pkt.Vlist,block_buffer[2],residual_block_buffer[2],para,frame_pool[2]);
-	}
-	}
-	
-	double end_time = omp_get_wtime( );
-	printf("%lf\n",end_time - start_time);
+
+
 	return 0;
 }
 

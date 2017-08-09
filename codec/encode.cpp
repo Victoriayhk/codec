@@ -9,6 +9,7 @@
 #include "ResidualBlock.h"
 #include "dct.h"
 #include <vector>
+#include "dctInterface.h"
 using namespace std;
 
 
@@ -29,83 +30,7 @@ int block_min(double *p,int N,int &pos,double &value)
 	}
 	return 0;
 }
-int block_decode_save(Block &blk,BlockBufferPool &blockbuffer,FrameBufferPool& framebuffer)
-{ 
-	/*
-	if(blk.pre_type==blk.INTRA_PREDICTION)
-		blockbuffer.add_block_to_pool(blk);
-	else if(blk.pre_type==blk.INTER_PREDICTION)
-		blockbuffer.add_block_to_pool(blk);
-	else
-	{}
-	*/
-	return 0;
-}
 
-double dp_encode(Block & block, ResidualBlock & residual_block, int start_r, int start_l, int h, int w, BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool) {
-	static map<int,Node> dp;
-	double score0 = DBL_MAX, score1 = DBL_MAX, score2 = DBL_MAX;
-	int pattern_num = 2;//Pattern::get_pattern_number();
-	for(int i = 0; i < pattern_num; ++i){
-
-	/*	intra_predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,Pattern::getPattern(i))
-
-		quantization(start_r,start_l, h, w , residual_block , para);
-
-		Reversed_quantization(start_r,start_l, h, w , residual_block , para);
-
-		reversed_intra_predict(block,residual_block,start_r,start_l, h, w,block_buffer_pool,Pattern::getPattern(i));
-
-		int score = compute_coef(residual_block,start_r,start_l, h, w);
-
-		if(score < score0){
-			update_node();
-		}*/
-
-	}
-	//inter_predict
-	
-
-	/*
-	if (w > 8) {
-		double score1 = dp_encode(block, residual_block, start_r, start_l, h, w/2, block_buffer_pool, frame_pool) + 
-						dp_encode(block, residual_block, start_r, start_l + w/2, h, w/2, block_buffer_pool, frame_pool);
-	}
-
-	if (h >= 8) {
-		double score2 = dp_encode(block, residual_block, start_r, start_l, h/2, w, block_buffer_pool, frame_pool) + 
-						dp_encode(block, residual_block, start_r + h/2, start_l, h/2, w, block_buffer_pool, frame_pool);
-	}
-
-	*/
-	/*if (score0 <= score1 && score0 <= score2) {
-		decode(node,residual_block,block_buffer_pool)
-		leaf_vector.push_back(Node());
-		method_vector.push_back(0);
-
-	} else if (score1 <= score2) {
-		method_vector.push_back(1);
-	} else {
-		method_vector.push_back(2);
-	}*/
-	return 0;
-}
-
-int dct_trans(ResidualBlock & residual_block,int left_row,int left_col,int right_row,int right_col,int h,int w)
-{
-	DCT4x4Solver dct_tr;
-    dct_tr.dct(residual_block.data.data(),left_row,left_col,right_row,right_col,h,w);
-	return 0;
-}
-
-
-int reverse_dct_trans(ResidualBlock & residual_block,int left_row,int left_col,int right_row,int right_col,int h,int w)
-{
-	DCT4x4Solver dct_tr;
-    dct_tr.reverse_dct(residual_block.data.data(),left_row,left_col,right_row,right_col,h,w);
-	return 0;
-	return 0;
-}
 
 inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
 
@@ -210,21 +135,21 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 }
 inline int encode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,AVFormat &para,FrameBufferPool & frame_pool){
 
-	BlockBufferPool  * decode_buffer = new BlockBufferPool(para.height,para.width);
+	BlockBufferPool & decode_buffer = frame_pool.new_back();
 	int block_height,block_width;
 	blocks[0].getBlockSize(para,block_height,block_width);
 
 	for(int i=0;i<blocks.size();++i){
 		residual_blocks[i].clear();
-		encode_one_block(blocks[i],residual_blocks[i],para,*decode_buffer,frame_pool);		
+		encode_one_block(blocks[i],residual_blocks[i],para,decode_buffer,frame_pool);		
 	}
-	frame_pool.add_frame_to_pool(decode_buffer);
+	//frame_pool.add_frame_to_pool(decode_buffer);
 	return 0;
 }
-int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool>  &frame_pool){
-	encode_one_component(frame.Yblock,pkt.Ylist,para,frame_pool[0]);
-	encode_one_component(frame.Ublock,pkt.Ulist,para,frame_pool[1]);
-	encode_one_component(frame.Vblock,pkt.Vlist,para,frame_pool[2]);
+int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool*>  &frame_pool){
+	encode_one_component(frame.Yblock,pkt.Ylist,para,*frame_pool[0]);
+	encode_one_component(frame.Ublock,pkt.Ulist,para,*frame_pool[1]);
+	encode_one_component(frame.Vblock,pkt.Vlist,para,*frame_pool[2]);
 	return 0;
 }
 

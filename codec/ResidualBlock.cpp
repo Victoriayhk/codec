@@ -3,18 +3,19 @@
 #include "huffman.h"
 #include <time.h>
 #include <iostream>
+#include <queue>
 
 using namespace std;
 
 #define BASE_MALLOC_SIZE 360000
 
-ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type){
+ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type),curr_node(0){
 	data.clear();
 	data.resize(width*height);
 }
 
 
-ResidualBlock::ResidualBlock():tree(0,0,0,0)
+ResidualBlock::ResidualBlock():tree(0,0,0,0),curr_node(0)
 {
 }
 
@@ -28,8 +29,9 @@ ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),curr_node(0),dat
 	block_type = block.block_type;
 	//tree = tree(0,0,height,width);
 }
-Node * ResidualBlock::get_node(){
-	return &node_list[curr_node++];
+Node & ResidualBlock::get_node(int &id){
+	id = curr_node;
+	return node_list[curr_node++];
 }
 void ResidualBlock::getBlockSize(AVFormat &para, int& height, int& width)
 {
@@ -45,12 +47,137 @@ void ResidualBlock::getBlockSize(AVFormat &para, int& height, int& width)
 	}
 }
 
-Tree::Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w):data(nullptr),
+
+
+	
+int Node::to_stream(unsigned char * stream){
+
+	*(stream) = (0x7F & prediction);
+	int byte = 1;
+	if(pre_type == INTRA_PREDICTION){
+		*(stream) |= (unsigned char)0x00;
+	}else{
+		*(stream) |= (unsigned char)0x80;
+
+		*(stream +1 ) = mv[0];
+		
+		*(stream + 2) = mv[1];
+
+		byte += 2;
+
+	}
+
+	return byte;
+}
+
+int Node::from_stream(unsigned char * stream){
+	int need_byte = 0;
+	prediction = *(stream + need_byte) & (unsigned char)0x7F;
+	unsigned char type = *(stream + need_byte) & (unsigned char)0x80;
+
+	if(type == (unsigned char)0x00){
+		pre_type = INTRA_PREDICTION;
+	}else{
+		pre_type = INTER_PREDICTION;
+		++need_byte;
+
+		mv[0] = *(stream + need_byte);
+		++need_byte;
+		mv[1] = *(stream + need_byte);
+		++need_byte;
+	}
+	return need_byte;
+
+}
+Tree::Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w):node_id(-1),
 				split_direction(NONE),left(nullptr),right(nullptr),
 				left_top_h(left_top_h),left_top_w(left_top_w),right_bottom_h(right_bottom_h),right_bottom_w(right_bottom_w){
 }
+void Tree::serialize(unsigned char * stream,int &byte,int &bit,uint8_t * used_node_ids,int &idx){
+	unsigned char * tmp = stream + byte;
+
+	if(bit == 0) *tmp = 0x00;
+	if(this->split_direction == NONE){
+		used_node_ids[idx++] = node_id;
+		*tmp |= ((unsigned char)0x00 << bit);
+		bit += 2;
+		if(bit == 8){
+			bit = 0;
+			++byte;
+		}
+	}else{
+		if(this->split_direction == HORIZONTAL){
+			*tmp |= ((unsigned char)0x01 << bit);
+
+		}else{
+			*tmp |= ((unsigned char)0x02 << bit);
+		}
+		bit += 2;
+		if(bit == 8){
+			bit = 0;
+			++byte;
+		}
+		this->left->serialize(stream,byte,bit,used_node_ids,idx);
+		this->right->serialize(stream,byte,bit,used_node_ids,idx);
+	}
+	
+}
+
+void Tree::deserialize(unsigned char * stream,int &byte,int &bit,int &idx){
+	unsigned char * tmp = stream + byte;
+	unsigned char type = (*tmp >> bit) & (unsigned char)0x03;
+	int w = right_bottom_w - left_top_w + 1;
+	int h = left_top_h - right_bottom_h + 1;
+	if(type == 0x00){
+		bit += 2;
+		if(bit == 8){
+			bit = 0;
+			++byte;
+		}
+		this->left = nullptr;
+		this->right = nullptr;
+		this->node_id = idx;
+		this->split_direction = NONE;
+		idx += 1;
+	}else{
+		if(type == 0x01){
+			this->split_direction = HORIZONTAL;
+			this->left = new Tree(left_top_h,left_top_w,right_bottom_h,right_bottom_w - (w/2));
+			this->right = new Tree(left_top_h,left_top_w + (w/2),right_bottom_h,right_bottom_w);
+		}else{
+			this->split_direction = VERTICAL;
+			this->left = new Tree(left_top_h,left_top_w,right_bottom_h - (h/2),right_bottom_w);
+			this->right = new Tree(left_top_h + (h/2),left_top_w,right_bottom_h,right_bottom_w);
+		}
+		bit += 2;
+		if(bit == 8){
+			bit = 0;
+			++byte;
+		}
+		this->node_id = -1;
+		this->left->deserialize(stream,byte,bit,idx);
+		this->right->deserialize(stream,byte,bit,idx);
+	}
+	
+}
 
 
+int Tree::to_stream(unsigned char * stream,uint8_t * used_node_ids,int &num){
+	int byte = 0,bit = 0,idx=0;
+	this->serialize(stream,byte,bit,used_node_ids,idx);
+	num = idx;
+
+	return byte;
+}
+
+
+int Tree::from_stream(unsigned char * stream,int &num){
+	int byte = 0,bit = 0,idx=0;
+	this->deserialize(stream,byte,bit,idx);
+	num = idx;
+
+	return byte;
+}
 
 template<typename T>
 inline int save_to_buffer(const T &val, unsigned char *buffer) {
@@ -81,12 +208,12 @@ inline int get_from_buffer(T &val, unsigned char *buffer, int length) {
 * 将ResidualBlock写入流
 * 流stream需要预先开辟空间
 */
-int ResidualBlock::to_stream(unsigned char *stream) {
+int ResidualBlock::to_stream(unsigned char *stream,AVFormat &para) {
 	unsigned char *p = stream;
 	p += save_to_buffer(block_id, p);
 	p += save_to_buffer(order, p);
 	p += save_to_buffer(block_type, p);
-	if(!is_tree){
+	if(!para.is_tree){
 		p += save_to_buffer(type_slice, p);
 		if(type_slice==0)
 			p += save_to_buffer(node[0], p);
@@ -95,7 +222,15 @@ int ResidualBlock::to_stream(unsigned char *stream) {
 				p += save_to_buffer(node[i], p);
 		}
 	}else{
-	
+
+		memset(used_node_ids,unsigned char(128),128);
+
+		p += tree.to_stream(p,used_node_ids,curr_node);
+		int start_byte = 0;
+		for(int i = 0; i < curr_node; ++i){
+			if(used_node_ids[i] == (unsigned char)128) break;
+			p += node_list[used_node_ids[i]].to_stream(p); 
+		}
 	}
 
 
@@ -109,22 +244,38 @@ int ResidualBlock::to_stream(unsigned char *stream) {
 /*
 * 从流中还原出ResidualBlock
 */
-int ResidualBlock::from_stream(unsigned char *stream, int block_size) {
+int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &para) {
 	unsigned char *p = stream;
 	p += get_from_buffer(block_id, p);
 	p += get_from_buffer(order, p);
 	p += get_from_buffer(block_type, p);
-	p += get_from_buffer(type_slice, p);
-	if(type_slice==0){
-		node.resize(1);
-		p += get_from_buffer(node[0], p);
+
+	if(!para.is_tree){
+		p += get_from_buffer(type_slice, p);
+		if(type_slice==0){
+			node.resize(1);
+			p += get_from_buffer(node[0], p);
+		}
+		if(type_slice==1){
+			node.resize(4);
+			for(int i=0;i<4;++i)
+				p += get_from_buffer(node[i], p);
+		}
+	}else{
+		int num = 0;
+		tree.left_top_h = 0;
+		tree.left_top_w = 0;
+		tree.right_bottom_h = para.block_height - 1;
+		tree.right_bottom_w = para.block_width - 1;
+		p += tree.from_stream(p,num);
+
+		for(int i = 0; i < num; ++i){
+			p += node_list[curr_node ++].from_stream(p);
+		}
 	}
-	if(type_slice==1){
-		node.resize(4);
-		for(int i=0;i<4;++i)
-			p += get_from_buffer(node[i], p);
-	}
+	//if(data.size() != block_size){
 	data.resize(block_size);
+	//}
 	short *pdata = data.data();
 	p += get_from_buffer(pdata, p, block_size * sizeof(data[0]));
 	return p - stream;
@@ -165,16 +316,16 @@ int PKT::init(AVFormat& para){
 * 将PKT写入流
 * 流stream需要预先开辟空间
 */
-int PKT::to_stream(unsigned char *stream) {
+int PKT::to_stream(unsigned char *stream, AVFormat &para) {
 	unsigned char *p = stream;
 	for (int i = 0; i < (int) Ylist.size(); i++) {
-		p += Ylist[i].to_stream(p);
+		p += Ylist[i].to_stream(p,para);
 	}
 	for (int i = 0; i < (int) Ulist.size(); i++) {
-		p += Ulist[i].to_stream(p);
+		p += Ulist[i].to_stream(p,para);
 	}
 	for (int i = 0; i < (int) Vlist.size(); i++) {
-		p += Vlist[i].to_stream(p);
+		p += Vlist[i].to_stream(p,para);
 	}
 	return p - stream;
 }
@@ -192,14 +343,14 @@ int PKT::from_stream(unsigned char *stream, AVFormat &para) {
 
 	int yblock_size = para.block_height * para.block_width;
 	for (int i = 0; i < (int) Ylist.size(); i++) {
-		p += Ylist[i].from_stream(p, yblock_size);
+		p += Ylist[i].from_stream(p, yblock_size,para);
 	}
 
 	for (int i = 0; i < (int) Ulist.size(); i++) {
-		p += Ulist[i].from_stream(p, yblock_size / 4);
+		p += Ulist[i].from_stream(p, yblock_size / 4, para);
 	}
 	for (int i = 0; i < (int) Vlist.size(); i++) {
-		p += Vlist[i].from_stream(p, yblock_size / 4);
+		p += Vlist[i].from_stream(p, yblock_size / 4, para);
 	}
 	return p - stream;
 }
