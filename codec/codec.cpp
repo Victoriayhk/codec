@@ -18,7 +18,7 @@
 
 //#include "huffman.h"
 
-//#define DEBUG
+#define DEBUG
 int main(int argc, char * argv[])
 {
 	int proc_start,proc_end;

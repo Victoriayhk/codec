@@ -10,8 +10,9 @@ using namespace std;
 #define BASE_MALLOC_SIZE 360000
 
 uint8_t* PKT::stream_buff = nullptr;
+uint8_t* PKT::head_buff = nullptr;
 
-ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type),curr_node(0){
+ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type){
 	data.clear();
 	data.resize(width*height);
 }
@@ -383,6 +384,9 @@ int PKT::stream_write(AVFormat& para)
 	uint8_t *tmp_head_t = (uint8_t*)malloc(sizeof(uint8_t) * BASE_MALLOC_SIZE);
 	uint8_t *tmp_head;
 	uint8_t *head_point = tmp_head_t;
+	uint8_t *head_out = nullptr;
+	unsigned int head_out_len = 0;
+	uint8_t head_len_ch[4];
 	int one_head_len;
 	int head_N = 1;
 	int head_len = 0;
@@ -414,6 +418,14 @@ int PKT::stream_write(AVFormat& para)
 		head_point += one_head_len;
 		head_len += one_head_len;
 	}
+
+	//if(PKT::stream_buff == nullptr)
+	//{
+	//	PKT::stream_buff = (uint8_t*)malloc(10000);
+	//}
+
+	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
+	toch4(head_out_len,head_len_ch);
 	//cout<<endl;
 
 	//cout<<len<<" ";
@@ -421,7 +433,6 @@ int PKT::stream_write(AVFormat& para)
 	//stream = (uint8_t *)malloc(len);
 	//point = stream;
 	//memcpy(point,tmp_stream,len);
-	stream_len = len + head_len;
 
 	if(para.stream_writer == nullptr)
 	{
@@ -434,12 +445,14 @@ int PKT::stream_write(AVFormat& para)
 	//	cout<<(int)tmp_head_t[i]<<" ";
 	//}
 	//cout<<endl;
-
-	fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
+	fwrite(head_len_ch,sizeof(uint8_t),4,para.stream_writer);
+	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);
+	//fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
 	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
 
 	free(tmp_head_t);
 	free(tmp_stream);
+	stream_len = len + head_out_len + 2;
 	
 	//对一帧的U数据进行熵编码
 	entropy_encode_slice(Ulist.data(),block_num,para,&tmp_stream,&len);
@@ -472,18 +485,24 @@ int PKT::stream_write(AVFormat& para)
 		head_point += one_head_len;
 		head_len += one_head_len;
 	}
+
+	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
+	toch4(head_out_len,head_len_ch);
+
 	//cout<<endl;
 	//cout<<len<<" ";
 	//stream = (uint8_t *)realloc(stream,stream_len + len);
 	//point = stream + stream_len;
 	//memcpy(point,tmp_stream,len);
 
-	fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
+	fwrite(head_len_ch,sizeof(uint8_t),4,para.stream_writer);
+	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);
+	//fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
 	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
 
 	free(tmp_head_t);
 	free(tmp_stream);
-	stream_len += len + head_len;
+	stream_len = len + head_out_len + 2;
 	
 	//对一帧的V数据进行熵编码
 	entropy_encode_slice(Vlist.data(),block_num,para,&tmp_stream,&len);
@@ -508,18 +527,23 @@ int PKT::stream_write(AVFormat& para)
 		head_point += one_head_len;
 		head_len += one_head_len;
 	}
+	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
+	toch4(head_out_len,head_len_ch);
 	//cout<<endl;
 	//cout<<len<<" "<<endl;
 	//stream = (uint8_t *)realloc(stream,stream_len + len);
 	//point = stream + stream_len;
 	//memcpy(point,tmp_stream,len);
 
-	fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
+	fwrite(head_len_ch,sizeof(uint8_t),4,para.stream_writer);
+	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);
+	//fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
 	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
 
 	free(tmp_head_t);
 	free(tmp_stream);
-	stream_len += len + head_len;
+	//stream_len += len + head_len;
+	stream_len = len + head_out_len + 2;
 
 	return 0;
 }
@@ -533,8 +557,12 @@ int PKT::stream_read(AVFormat& para)
 		stream_buff = (uint8_t*)malloc(1000000);
 	uint8_t *tmp_head;
 	uint8_t stream_len[4];
+	uint8_t *point = nullptr;
+	uint8_t *tmp_head_t = nullptr;
 
+	unsigned int out_len;
 	int head_len;
+	int head_total_len = 0;
 	
 	//uint8_t *point;
 	uint8_t temp_len[4];
@@ -561,18 +589,29 @@ int PKT::stream_read(AVFormat& para)
 		//para.stream_reader = fopen(para.stream_file_name,"rb");
 	}
 
+
+	fread(temp_len,1,4,para.stream_reader);
+	fromch4(head_total_len,temp_len);
+	tmp_head = (uint8_t *)malloc(head_total_len);
+	fread(tmp_head,1,head_total_len,para.stream_reader);
+
+	huffman_decode_memory(tmp_head,head_total_len,&tmp_head_t,&out_len);
+
+	point = tmp_head_t;
+
 	for(int i = 0;i<para.block_num;++i)
 	{
-		fread(temp_len,1,4,para.stream_reader);
-		fromch4(len,temp_len);
-		tmp_head = (uint8_t *)malloc(len);
-		fread(tmp_head,1,len,para.stream_reader);
+		//fread(temp_len,1,4,para.stream_reader);
+		fromch4(len,point);
+		//tmp_head = (uint8_t *)malloc(len);
+		//fread(tmp_head,1,len,para.stream_reader);
 
 		//fread(&temp_len,1,4,para.stream_reader);
+		point += 4;
+		block_stream2head(para, point, Ylist[i], len,&head_len);
+		point += head_len;
 
-		block_stream2head(para, tmp_head, Ylist[i], len,&head_len);
-
-		free(tmp_head);
+		//free(tmp_head);
 	}
 
 	fread(stream_len,1,4,para.stream_reader);
@@ -584,18 +623,22 @@ int PKT::stream_read(AVFormat& para)
 	entropy_decode_slice(Ylist.data(),block_num,para,stream_buff,len);
 	//free(tmp_stream);
 
+	fread(temp_len,1,4,para.stream_reader);
+	fromch4(head_total_len,temp_len);
+	tmp_head = (uint8_t *)malloc(head_total_len);
+	fread(tmp_head,1,head_total_len,para.stream_reader);
+
+	huffman_decode_memory(tmp_head,head_total_len,&tmp_head_t,&out_len);
+
+	point = tmp_head_t;
+
 	for(int i = 0;i<para.block_num;++i)
 	{
-		fread(temp_len,1,4,para.stream_reader);
-		fromch4(len,temp_len);
-		tmp_head = (uint8_t *)malloc(len);
-		fread(tmp_head,1,len,para.stream_reader);
+		fromch4(len,point);
 
-		//fread(&temp_len,1,4,para.stream_reader);
-
-		block_stream2head(para, tmp_head, Ulist[i], len,&head_len);
-
-		free(tmp_head);
+		point += 4;
+		block_stream2head(para, point, Ulist[i], len,&head_len);
+		point += head_len;
 	}
 
 	fread(stream_len,1,4,para.stream_reader);
@@ -606,18 +649,22 @@ int PKT::stream_read(AVFormat& para)
 	entropy_decode_slice(Ulist.data(),block_num,para,stream_buff,len);
 	//free(tmp_stream);
 
+	fread(temp_len,1,4,para.stream_reader);
+	fromch4(head_total_len,temp_len);
+	tmp_head = (uint8_t *)malloc(head_total_len);
+	fread(tmp_head,1,head_total_len,para.stream_reader);
+
+	huffman_decode_memory(tmp_head,head_total_len,&tmp_head_t,&out_len);
+
+	point = tmp_head_t;
+
 	for(int i = 0;i<para.block_num;++i)
 	{
-		fread(&temp_len,1,4,para.stream_reader);
-		fromch4(len,temp_len);
-		tmp_head = (uint8_t *)malloc(len);
-		fread(tmp_head,1,len,para.stream_reader);
+		fromch4(len,point);
 
-		//fread(&temp_len,1,4,para.stream_reader);
-
-		block_stream2head(para, tmp_head, Vlist[i], len,&head_len);
-
-		free(tmp_head);
+		point += 4;
+		block_stream2head(para, point, Vlist[i], len,&head_len);
+		point += head_len;
 	}
 
 	fread(stream_len,1,4,para.stream_reader);
@@ -712,7 +759,9 @@ int PKT::block_stream2head(AVFormat& para, uint8_t* stream, ResidualBlock& rBloc
 
 	for(int i = 0 ;i<node_len;++i)
 	{
-		fromch4(rBlock.node[i],point);
+		int k;
+		fromch4(k,point);
+		rBlock.node[i] = k;
 		point += sizeof(rBlock.node[i]);
 	}
 

@@ -191,4 +191,5 @@ public:
 
 private:
 	static uint8_t* stream_buff;
+	static uint8_t* head_buff;
 };
