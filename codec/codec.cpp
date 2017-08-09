@@ -57,21 +57,17 @@ int main(int argc, char * argv[])
 	#ifdef DEBUG
 		end_time=clock();
 		std::cout<<" yuv readtime is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;			
-	#endif
-	#ifdef DEBUG
 		start_time=clock();
 	#endif
 
-		int errno1 = encode(frame,para,pkt,frame_pool);
+		int errno1 = encode(frame,para,pkt,frame_pool);  //encode
 
 	#ifdef DEBUG
 		end_time=clock();			
 		std::cout<<"encode Frame "<<i<<endl<< " encode time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl;
-	#endif
-	#ifdef DEBUG
 		start_time=clock();
 	#endif
-		pkt.stream_write(para);
+		pkt.stream_write(para);                    //pkt_write
 	#ifdef DEBUG
 		end_time=clock();
 		std::cout<<"pkt write time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;			
