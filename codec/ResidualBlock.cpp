@@ -9,10 +9,13 @@ using namespace std;
 
 #define BASE_MALLOC_SIZE 360000
 
+uint8_t* PKT::stream_buff = nullptr;
+
 ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type),curr_node(0){
 	data.clear();
 	data.resize(width*height);
 }
+
 
 
 ResidualBlock::ResidualBlock():tree(0,0,0,0),curr_node(0)
@@ -29,6 +32,7 @@ ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),curr_node(0),dat
 	block_type = block.block_type;
 	//tree = tree(0,0,height,width);
 }
+
 Node & ResidualBlock::get_node(int &id){
 	id = curr_node;
 	return node_list[curr_node++];
@@ -46,6 +50,7 @@ void ResidualBlock::getBlockSize(AVFormat &para, int& height, int& width)
 		width = para.block_width / 2;
 	}
 }
+
 
 
 
@@ -208,11 +213,13 @@ inline int get_from_buffer(T &val, unsigned char *buffer, int length) {
 * 将ResidualBlock写入流
 * 流stream需要预先开辟空间
 */
+
 int ResidualBlock::to_stream(unsigned char *stream,AVFormat &para) {
 	unsigned char *p = stream;
 	p += save_to_buffer(block_id, p);
 	p += save_to_buffer(order, p);
 	p += save_to_buffer(block_type, p);
+
 	if(!para.is_tree){
 		p += save_to_buffer(type_slice, p);
 		if(type_slice==0)
@@ -244,11 +251,13 @@ int ResidualBlock::to_stream(unsigned char *stream,AVFormat &para) {
 /*
 * 从流中还原出ResidualBlock
 */
+
 int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &para) {
 	unsigned char *p = stream;
 	p += get_from_buffer(block_id, p);
 	p += get_from_buffer(order, p);
 	p += get_from_buffer(block_type, p);
+
 
 	if(!para.is_tree){
 		p += get_from_buffer(type_slice, p);
@@ -273,6 +282,7 @@ int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &p
 			p += node_list[curr_node ++].from_stream(p);
 		}
 	}
+
 	//if(data.size() != block_size){
 	data.resize(block_size);
 	//}
@@ -316,15 +326,19 @@ int PKT::init(AVFormat& para){
 * 将PKT写入流
 * 流stream需要预先开辟空间
 */
+
 int PKT::to_stream(unsigned char *stream, AVFormat &para) {
 	unsigned char *p = stream;
 	for (int i = 0; i < (int) Ylist.size(); i++) {
+
 		p += Ylist[i].to_stream(p,para);
 	}
 	for (int i = 0; i < (int) Ulist.size(); i++) {
+
 		p += Ulist[i].to_stream(p,para);
 	}
 	for (int i = 0; i < (int) Vlist.size(); i++) {
+
 		p += Vlist[i].to_stream(p,para);
 	}
 	return p - stream;
@@ -343,13 +357,16 @@ int PKT::from_stream(unsigned char *stream, AVFormat &para) {
 
 	int yblock_size = para.block_height * para.block_width;
 	for (int i = 0; i < (int) Ylist.size(); i++) {
+
 		p += Ylist[i].from_stream(p, yblock_size,para);
 	}
 
 	for (int i = 0; i < (int) Ulist.size(); i++) {
+
 		p += Ulist[i].from_stream(p, yblock_size / 4, para);
 	}
 	for (int i = 0; i < (int) Vlist.size(); i++) {
+
 		p += Vlist[i].from_stream(p, yblock_size / 4, para);
 	}
 	return p - stream;
@@ -374,11 +391,11 @@ int PKT::stream_write(AVFormat& para)
 	unsigned int stream_len;
 	int block_num = para.width*para.height/para.block_height/para.block_width;
 
-	int start_time=clock();
+	//int start_time=clock();
 	entropy_encode_slice(Ylist.data(),block_num,para,&tmp_stream,&len);
-	int end_time=clock();
+	//int end_time=clock();
 
-	std::cout<< "Stream wirte Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
+	//std::cout<< "Stream wirte Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
 
 	for(int i = 0;i<Ylist.size();++i)
 	{
@@ -512,8 +529,10 @@ int PKT::stream_write(AVFormat& para)
 */
 int PKT::stream_read(AVFormat& para)
 {
-	uint8_t *tmp_stream;
+	if(stream_buff == nullptr)
+		stream_buff = (uint8_t*)malloc(1000000);
 	uint8_t *tmp_head;
+	uint8_t stream_len[4];
 
 	int head_len;
 	
@@ -556,14 +575,14 @@ int PKT::stream_read(AVFormat& para)
 		free(tmp_head);
 	}
 
-	fread(temp_len,1,4,para.stream_reader);
-	fromch4(len,temp_len);
-	tmp_stream = (uint8_t *)malloc(len);
-	fread(tmp_stream,1,len,para.stream_reader);
+	fread(stream_len,1,4,para.stream_reader);
+	fromch4(len,stream_len);
+	//tmp_stream = (uint8_t *)malloc(len);
+	fread(stream_buff,1,len,para.stream_reader);
 
 
-	entropy_decode_slice(Ylist.data(),block_num,para,tmp_stream,len);
-	free(tmp_stream);
+	entropy_decode_slice(Ylist.data(),block_num,para,stream_buff,len);
+	//free(tmp_stream);
 
 	for(int i = 0;i<para.block_num;++i)
 	{
@@ -579,13 +598,13 @@ int PKT::stream_read(AVFormat& para)
 		free(tmp_head);
 	}
 
-	fread(temp_len,1,4,para.stream_reader);
-	fromch4(len,temp_len);
-	tmp_stream = (uint8_t *)malloc(len);
-	fread(tmp_stream,1,len,para.stream_reader);
+	fread(stream_len,1,4,para.stream_reader);
+	fromch4(len,stream_len);
+	//tmp_stream = (uint8_t *)malloc(len);
+	fread(stream_buff,1,len,para.stream_reader);
 
-	entropy_decode_slice(Ulist.data(),block_num,para,tmp_stream,len);
-	free(tmp_stream);
+	entropy_decode_slice(Ulist.data(),block_num,para,stream_buff,len);
+	//free(tmp_stream);
 
 	for(int i = 0;i<para.block_num;++i)
 	{
@@ -601,13 +620,13 @@ int PKT::stream_read(AVFormat& para)
 		free(tmp_head);
 	}
 
-	fread(&temp_len,1,4,para.stream_reader);
-	fromch4(len,temp_len);
-	tmp_stream = (uint8_t *)malloc(len);
-	fread(tmp_stream,1,len,para.stream_reader);
+	fread(stream_len,1,4,para.stream_reader);
+	fromch4(len,stream_len);
+	//tmp_stream = (uint8_t *)malloc(len);
+	fread(stream_buff,1,len,para.stream_reader);
 
-	entropy_decode_slice(Vlist.data(),block_num,para,tmp_stream,len);
-	free(tmp_stream);
+	entropy_decode_slice(Vlist.data(),block_num,para,stream_buff,len);
+	//free(tmp_stream);
 
 	return 0;
 }

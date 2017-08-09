@@ -1079,6 +1079,12 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	uint8_t * tmp_stream = nullptr;
 	uint8_t* out_stream = nullptr;
 		//= (uint8_t*)malloc(1000000);
+	//static uint8_t * tmp_stream = nullptr;
+	//if(tmp_stream == nullptr)
+	//{
+	//	tmp_stream = (uint8_t*)malloc(b_size + sign_size);
+	//}
+
 	entropy_to_stream(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream);
 
 	uint8_t *p = tmp_stream;
@@ -1146,9 +1152,12 @@ int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	//	cout<<(int)stream[i]<<" ";
 	//}
 	//cout<<endl;
+	uint8_t* out_tmp = nullptr;
 
-	huffman_decode_memory(stream,buff_length,&stream,&out_length);
-	entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,stream);
+	huffman_decode_memory(stream,buff_length,&out_tmp,&out_length);
+	entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,out_tmp);
+
+	free(out_tmp);
 	return 0;
 }
 

@@ -170,6 +170,7 @@ public:
 class PKT
 {
 public:
+
 	std::vector<ResidualBlock> Ylist;
 	std::vector<ResidualBlock> Ulist;
 	std::vector<ResidualBlock> Vlist;
@@ -187,4 +188,7 @@ public:
 	int block_stream2head(AVFormat& para, uint8_t* stream, ResidualBlock& rBlock, int buff_len, int *head_length);
 
 	int clear();
+
+private:
+	static uint8_t* stream_buff;
 };
