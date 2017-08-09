@@ -1,5 +1,6 @@
 #include "dct.h"
 #include "def.h"
+
 #include <math.h>
 #include <cstdlib>
 
@@ -277,5 +278,10 @@ int  DCT4x4Solver::reverse_dct(int16_t *data, int left_row,int left_col,int righ
 
 	return 0;
 }
+
+
+
+
+
 
 #endif
