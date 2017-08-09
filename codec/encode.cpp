@@ -7,7 +7,7 @@
 #include <time.h>
 #include "Pattern.h"
 #include "ResidualBlock.h"
-#include "dct4x4.h"
+#include "dct.h"
 #include <vector>
 using namespace std;
 
@@ -91,6 +91,21 @@ double dp_encode(Block & block, ResidualBlock & residual_block, int start_r, int
 	return 0;
 }
 
+int dct_trans(ResidualBlock & residual_block,int left_row,int left_col,int right_row,int right_col,int h,int w)
+{
+	DCT4x4Solver dct_tr;
+    dct_tr.dct(residual_block.data.data(),left_row,left_col,right_row,right_col,h,w);
+	return 0;
+}
+
+
+int reverse_dct_trans(ResidualBlock & residual_block,int left_row,int left_col,int right_row,int right_col,int h,int w)
+{
+	DCT4x4Solver dct_tr;
+    dct_tr.reverse_dct(residual_block.data.data(),left_row,left_col,right_row,right_col,h,w);
+	return 0;
+	return 0;
+}
 
 inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
 
@@ -132,11 +147,12 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 		block_min(_8_8_pattern[i],N,pos8,value8);
 		Pattern::predict(block,residual_block,position[i].left_top_x,position[i].left_top_y,
 											position[i].right_bottom_x,position[i].right_bottom_y,block_buffer_pool,pos8,para);
-
+		dct_trans(residual_block,position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,h,w);
 		quantization(position[i].left_top_x,position[i].left_top_y,
 					position[i].right_bottom_x,position[i].right_bottom_y,residual_block,para);
 		Reverse_quantization(position[i].left_top_x,position[i].left_top_y,
 							position[i].right_bottom_x,position[i].right_bottom_y,residual_block,para);
+		reverse_dct_trans(residual_block,position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,h,w);
 		Pattern::de_predict(block,residual_block,position[i].left_top_x,position[i].left_top_y,
 											position[i].right_bottom_x,position[i].right_bottom_y,block_buffer_pool,pos8,para);
 		min_value8+=value8;
@@ -149,12 +165,11 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 		residual_block.type_slice=0;
 		residual_block.node.push_back(pos16);
 		Pattern::predict(block,residual_block,0,0,h-1,w-1,block_buffer_pool,pos16,para);
-		quantization(0 ,0 ,h-1 ,w-1 , residual_block , para);
-		//dct_trans.dct(int16_t *data, h, w);
+		dct_trans(residual_block,0 ,0 ,h-1 ,w-1 ,h,w);
+		quantization(0 ,0 ,h-1 ,w-1 , residual_block , para);		
 		temp=residual_block;
-		//dct_trans.dct(0, 0, h, w, data);
-		//dct_trans.dct(int16_t *data,int left_row,int left_col,int right_row,int right_col,int h,int w);
 		Reverse_quantization(0 ,0 ,h-1 ,w-1 , residual_block , para);	
+		reverse_dct_trans(residual_block,0 ,0 ,h-1 ,w-1 ,h,w);
 		Pattern::de_predict(block,residual_block,0,0,h-1,w-1,block_buffer_pool,pos16,para);
 		residual_block=temp;  //  ying gai ding yi kao bei gou zao han shu
 	}
@@ -166,6 +181,7 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 		residual_block.type_slice=1;
 		for(int i=0;i<4;++i){
 		Pattern::predict(save_block,residual_block,position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,block_buffer_pool,_8_8_type[i],para);
+		dct_trans(residual_block,position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,h,w);
 		quantization(position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,residual_block,para);
 		residual_block.node.push_back(_8_8_type[i]);		
 		if(i==0)
@@ -182,8 +198,8 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 			temp.node.push_back(_8_8_type[i]);
 		}
 		Reverse_quantization(position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,residual_block,para);
-		Pattern::de_predict(save_block,residual_block,position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,block_buffer_pool,_8_8_type[i],para);
-		
+		reverse_dct_trans(residual_block,position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,h,w);
+		Pattern::de_predict(save_block,residual_block,position[i].left_top_x,position[i].left_top_y,position[i].right_bottom_x,position[i].right_bottom_y,block_buffer_pool,_8_8_type[i],para);		
 		}
 		residual_block=temp;
 		block=save_block;

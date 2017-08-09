@@ -1079,6 +1079,12 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	uint8_t * tmp_stream = nullptr;
 	uint8_t* out_stream = nullptr;
 		//= (uint8_t*)malloc(1000000);
+	//static uint8_t * tmp_stream = nullptr;
+	//if(tmp_stream == nullptr)
+	//{
+	//	tmp_stream = (uint8_t*)malloc(b_size + sign_size);
+	//}
+
 	entropy_to_stream(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream);
 
 	uint8_t *p = tmp_stream;
@@ -1146,9 +1152,12 @@ int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	//	cout<<(int)stream[i]<<" ";
 	//}
 	//cout<<endl;
+	uint8_t* out_tmp = nullptr;
 
-	huffman_decode_memory(stream,buff_length,&stream,&out_length);
-	entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,stream);
+	huffman_decode_memory(stream,buff_length,&out_tmp,&out_length);
+	entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,out_tmp);
+
+	free(out_tmp);
 	return 0;
 }
 
@@ -1487,20 +1496,51 @@ void head_test()
 	para.block_width = 16;
 	PKT pkt;
 	pkt.init(para);
-	ResidualBlock rblock,rblock2;
-	rblock.block_id = 1;
-	//rblock.block_type = 2;
-	rblock.order = 3;
-	rblock.type_slice = 2;
-	for(int i = 0 ; i< 10;++i)
+	ResidualBlock rblock[10];
+	ResidualBlock rblock2[10];
+	for(int i = 0 ; i< 10 ;++i)
 	{
-		rblock.node.push_back(i*i);
+		rblock[i].block_id = 1;
+		//rblock.block_type = 2;
+		rblock[i].order = 3;
+		rblock[i].type_slice = 2;
+
+		for(int j = 0 ; j< 4;++j)
+		{
+			rblock[i].node.push_back(i*i);
+		}
 	}
 
-	uint8_t *stream = nullptr;
-	int len,head_len;
+	uint8_t *tmp_stream = nullptr;
+	uint8_t *stream = (uint8_t*)malloc(1000000);
+	uint8_t *point = stream;
+	uint8_t *out_stream = nullptr;
+	uint8_t *out_stream2 = nullptr;
+	int len,head_len = 0;
 
-	pkt.block_head2stream(para,&stream,rblock,&len);
+	unsigned int out_len,out_len2;
 
-	pkt.block_stream2head(para,stream,rblock2,len,&head_len);
+	for(int j = 0;j<10;++j)
+	{
+		pkt.block_head2stream(para,&tmp_stream,rblock[j],&len);
+		
+		memcpy(point,tmp_stream,len);
+		point += len;
+		head_len += len;
+	}
+	huffman_encode_memory(stream,head_len,&out_stream,&out_len);
+
+	huffman_decode_memory(out_stream,out_len,&out_stream2,&out_len2);
+	point = out_stream2;
+	for(int j = 0;j<10;++j)
+	{
+		fromch4(len,point);
+		point += 4;
+
+		pkt.block_stream2head(para,point,rblock2[j],len,&head_len);
+
+		point += head_len;
+	}
+
+	return;
 }

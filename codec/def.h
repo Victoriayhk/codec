@@ -61,6 +61,7 @@ public:
 	FILE* video;
 	FILE* out_video;
 
+	char out_file_name[100];
 	/**
 	*  流文件写入写出文件
 	*/
@@ -113,7 +114,9 @@ public:
 public:
 	AVFormat();
 	~AVFormat();
-
+	int load(const string & config_file);
+	int load(int argc, char * argv[]);
+	void setValue(const string & key, const string & value);
 	void getBlockSize(Block::BlockType block_type, int& height, int& width);
 };
 
