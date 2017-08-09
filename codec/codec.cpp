@@ -33,7 +33,10 @@ int main(int argc, char * argv[])
 	pkt1.init(para);
 
 	vector<FrameBufferPool> frame_pool(3,FrameBufferPool(10));
-	//para.frame_num = 1;
+	para.quantizationY=40;
+    para.quantizationU=80;
+    para.quantizationV=80;
+	para.frame_num = 1;
 	for(int i = 0; i < para.frame_num; ++i){
 		yuv_read(para,frame);
 		int start_time=clock();
