@@ -68,7 +68,7 @@ void AVFormat::setValue(const string & key, const string & value){
 	}else if(key.compare("frame_num") == 0){
 		frame_num = std::stoi(value);
 	}else if(key.compare("is_tree") == 0){
-		if(key.compare("true") == 0){
+		if(value.compare("true") == 0){
 			is_tree = true;
 		}else{
 			is_tree = false;

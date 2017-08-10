@@ -102,3 +102,168 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 		}
 	}
 }
+
+
+
+
+/*
+* 从包含.getValue(i, j)/.get_width()/.get_height()方法的实体中, 读入.getValue(i, j)的数据
+* 如果i, j越界, 则返回128
+*/
+int16_t get_value_or_128(BlockBufferPool &sort_of_array, int i, int j) {
+	if (i < 0 || i >= sort_of_array.get_height() || j < 0 || j >= sort_of_array.get_width()) return 128;
+	else return sort_of_array.getValue(i, j);
+}
+
+//template<T>
+//inline void check_mv_if_better(InterMV &des, const InterMV &org, T &des_diff, const T &org_dff) {
+//	if (org_diff < des_diff) {
+//		des_diff = org_diff;
+//		memcpy(des, org, sizeof(InterMV));
+//	}
+//}
+
+double Pattern::calc_SAD_inter(const Block &block, int start_r, int start_c, int end_r, int end_c,
+	int r_i, int r_j, int block_w, int i_offset, int j_offset,
+	BlockBufferPool & bpool) {
+
+	double diff = 0;
+	for (int i = start_r; i <= end_r; i++) {		// 枚举块的行
+		for (int j = start_c; j <= end_c; j++) {	// 枚举块的列
+			int c_i = i_offset + (i + r_i);			// 参考块的行坐标
+			int c_j = j_offset + (j + r_j);			// 参考块的纵坐标
+			int tmp = (int16_t)block.data[i * block_w + j] - get_value_or_128(bpool, c_i, c_j);
+			diff += tmp * tmp;
+		}
+	}
+	return diff;
+}
+
+void Pattern::predict_inter_sub(const Block &block,ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c,
+	int r_i, int r_j, int block_w, int i_offset, int j_offset,
+	BlockBufferPool & bpool) {
+	for (int i = start_r; i <= end_r; i++) {		// 枚举块的行
+		for (int j = start_c; j <= end_c; j++) {	// 枚举块的列
+			int c_i = i_offset + (i + r_i);			// 参考块的行坐标
+			int c_j = j_offset + (j + r_j);			// 参考块的纵坐标
+			r_block.data[i * block_w + j] = (int16_t)block.data[i * block_w + j] - get_value_or_128(bpool, c_i, c_j);
+		}
+	}
+}
+
+double Pattern::inter_predict(Block& block, ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c, FrameBufferPool &f_pool, InterMV &inter_mv, AVFormat &para) {
+	int search_dir[4][2] = {
+		-1, 0,
+		0, -1,
+		0, 1,
+		1, 0,
+	};
+	int frame_width = para.width;
+	int frame_height = para.height;
+	int block_w, block_h;
+	r_block.getBlockSize(para, block_w, block_h);
+	int i_offset = (r_block.block_id / para.block_num_per_row) * block_h;	// 当前block的起始像素所在Frame的行
+	int j_offset = (r_block.block_id % para.block_num_per_row) * block_w;	// 当前block的起始像素所在Frame的列
+
+	if(f_pool.size()<=1)
+		return -1.0;
+	double diff = 1e20;
+	int best_fi;
+	std::pair<int, int> best_mv, mv, nmv;
+	std::map< std::pair<int, int>, double> hash;
+	for (int fi = f_pool.size() - 2; fi >= 0; fi--) {
+		mv.first = 0;
+		mv.second = 0;
+		int cur_diff = calc_SAD_inter(block, start_r, start_c, end_r, end_c, mv.first, mv.second, block_w, i_offset, j_offset, f_pool[fi]);
+		hash.clear();
+		hash[mv] = cur_diff;
+		int search_count=0;
+		int step_length = 16;
+		while (search_count<10 && step_length > 0) {
+			int best_d_p = -1, best_new_diff = -1;
+			for (int d_p = 0; d_p < 4; d_p ++) {
+				nmv.first = mv.first + search_dir[d_p][0] * step_length;
+				nmv.second = mv.second + search_dir[d_p][1] * step_length;
+				int new_diff;
+				if (hash.find(nmv) != hash.end()) {
+					new_diff = hash[nmv];
+				} else {
+					new_diff = calc_SAD_inter(block, start_r, start_c, end_r, end_c, nmv.first, nmv.second, block_w, i_offset, j_offset, f_pool[fi]);
+					hash[nmv] = new_diff;
+				}
+				if (new_diff > best_new_diff) {
+					best_new_diff = new_diff;
+					best_d_p = d_p;
+				}
+			}
+			if (best_d_p != -1) {
+				mv.first += search_dir[best_d_p][0];
+				mv.second += search_dir[best_d_p][1];
+				cur_diff = best_new_diff;
+			} else {
+				step_length >>= 1;
+			};
+			
+			++search_count;
+		}
+
+		if (cur_diff < diff) {
+			diff = cur_diff;
+			best_mv = mv;
+			best_fi = fi;
+		} else {
+			break;
+		}
+	}
+
+	//predict_inter_sub(block,r_block,start_r, start_c, end_r, end_c, best_mv.first, best_mv.second, block_w, i_offset, j_offset, f_pool[best_fi]);
+	inter_mv.fi = best_fi;
+	inter_mv.mv = best_mv;
+	return diff;
+}
+
+
+void Pattern::inter_predict_setvalue(Block& block, ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c, FrameBufferPool &f_pool, InterMV &inter_mv, AVFormat &para) {
+	int search_dir[4][2] = {
+		-1, 0,
+		0, -1,
+		0, 1,
+		1, 0,
+	};
+	int frame_width = para.width;
+	int frame_height = para.height;
+	int block_w, block_h;
+	r_block.getBlockSize(para, block_w, block_h);
+	int i_offset = (r_block.block_id / para.block_num_per_row) * block_h;	// 当前block的起始像素所在Frame的行
+	int j_offset = (r_block.block_id % para.block_num_per_row) * block_w;	// 当前block的起始像素所在Frame的列
+
+	predict_inter_sub(block,r_block,start_r, start_c, end_r, end_c, inter_mv.mv.first, inter_mv.mv.second, block_w, i_offset, j_offset, f_pool[inter_mv.fi]);
+}
+
+
+void Pattern::inter_predict_reverse(Block& block, ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c, FrameBufferPool &f_pool,BlockBufferPool & block_buffer_pool, InterMV &inter_mv, AVFormat &para) {
+	int search_dir[4][2] = {
+		-1, 0,
+		0, -1,
+		0, 1,
+		1, 0,
+	};
+	int frame_width = para.width;
+	int frame_height = para.height;
+	int block_w, block_h;
+	r_block.getBlockSize(para, block_w, block_h);
+	int i_offset = (r_block.block_id / para.block_num_per_row) * block_h;	// 当前block的起始像素所在Frame的行
+	int j_offset = (r_block.block_id % para.block_num_per_row) * block_w;	// 当前block的起始像素所在Frame的列
+	
+	BlockBufferPool &b_pool = f_pool[inter_mv.fi];
+	for (int i = start_r; i <= end_r; i++) {				// 枚举块的行
+		for (int j = start_c; j <= end_c; j++) {			// 枚举块的列
+			int c_i = i_offset + (i + inter_mv.mv.first);	// 参考块的行坐标
+			int c_j = j_offset + (j + inter_mv.mv.second);	// 参考块的纵坐标
+			block.data[i * block_w + j]=r_block.data[i * block_w + j]+get_value_or_128(b_pool, c_i, c_j);
+			block_buffer_pool.setValue(i+i_offset, j+j_offset,block.data[i * block_w + j]);
+		}
+	}
+}
+
+

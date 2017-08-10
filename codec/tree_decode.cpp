@@ -14,11 +14,15 @@
 
 inline int decode_with_tree(Block & block, ResidualBlock & residual_block,Tree & tree,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para){
 	
+		
+	int h,w;
+	residual_block.getBlockSize(para,h,w);
 	if(tree.split_direction == Tree::NONE){
 		int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
+		tree.data = &residual_block.node_list[tree.node_id];
+
 		Reverse_quantization(tph,tpw, brh, brw , residual_block , para);
-		
-		reverse_dct_trans(residual_block,tph,tpw,brh,brw,brh - tph + 1,brw - tpw + 1);
+		reverse_dct_trans(residual_block,tph,tpw,brh,brw,h,w);
 		
 		reverse_predict(block,residual_block,tree,block_buffer_pool,frame_pool,para);
 
@@ -39,8 +43,6 @@ inline int tree_decode_one_block(Block & block,ResidualBlock & residual_block,AV
 	block.block_id = residual_block.block_id;
 	block.block_type = residual_block.block_type;
 
-	block.getBlockSize(para,h,w);
-
 
 	decode_with_tree(block,residual_block,residual_block.tree,block_buffer_pool,frame_pool,para);
 
@@ -50,7 +52,7 @@ inline int tree_decode_one_block(Block & block,ResidualBlock & residual_block,AV
 
 inline int tree_decode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,AVFormat &para,FrameBufferPool & frame_pool){
 
-	BlockBufferPool  decode_buffer = frame_pool.new_back();
+	BlockBufferPool & decode_buffer = frame_pool.new_back();
 	int block_height,block_width;
 	residual_blocks[0].getBlockSize(para,block_height,block_width);
 	
@@ -59,7 +61,7 @@ inline int tree_decode_one_component(vector<Block> & blocks, std::vector<Residua
 		tree_decode_one_block(blocks[i],residual_blocks[i],para,decode_buffer,frame_pool);
 		
 	}
-	//frame_pool.add_frame_to_pool(decode_buffer);
+	
 	return 0;
 
 }

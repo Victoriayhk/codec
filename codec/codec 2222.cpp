@@ -16,9 +16,8 @@
 #include <string>
 #include "decode_buffer_pool.h"
 
-//#include "huffman.h"
-
 #define DEBUG
+
 int main(int argc, char * argv[])
 {
 	int proc_start,proc_end;
@@ -28,10 +27,10 @@ int main(int argc, char * argv[])
 	para.load(argc,argv);
 
 #ifdef DEBUG
-	para.quantizationY=20;
-    para.quantizationU=40;
-	para.quantizationV=40;
-	para.frame_num=3;
+	para.quantizationY=10;
+    para.quantizationU=15;
+	para.quantizationV=15;
+	para.frame_num=2;
 #endif
 	Frame frame;
 	Frame frame1;
@@ -47,7 +46,6 @@ int main(int argc, char * argv[])
 	frame_pool[2] = new FrameBufferPool(10,BlockBufferPool(para.height/2,para.width/2));
 	para.video = fopen(para.file_name,"rb");
 	para.out_video = fopen(para.out_file_name,"wb");	
-	int errno1,errno2;
 	for(int i = 0; i < para.frame_num; ++i){
 	#ifdef DEBUG
 		start_time=clock();
@@ -56,16 +54,13 @@ int main(int argc, char * argv[])
 		yuv_read(para,frame);	
 
 	#ifdef DEBUG
-
 		end_time=clock();
 		std::cout<<" yuv readtime is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;			
 		start_time=clock();
 	#endif
-		if(para.is_tree)
-		errno1 = tree_encode(frame,para,pkt,frame_pool);  //encode
-		else
-		errno1 = encode(frame,para,pkt,frame_pool);  //encode
-			
+
+		int errno1 = encode(frame,para,pkt,frame_pool);  //encode
+
 	#ifdef DEBUG
 		end_time=clock();			
 		std::cout<<"encode Frame "<<i<<endl<< " encode time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl;
@@ -79,9 +74,7 @@ int main(int argc, char * argv[])
 			printf("%d ",pkt.Ylist[0].data[i]);
 		}
 		printf("\n");
-
 	#endif
-
 	}
 #ifdef DEBUG
 	printf("=================================================================\n");
@@ -94,22 +87,17 @@ int main(int argc, char * argv[])
 	#endif
 		pkt1.stream_read(para);	
 		printf("decode Frame %d\n",i);
-
-		if(para.is_tree)
-		errno2 = tree_decode(frame1,para,pkt1,frame_pool);
-		else
-		errno2 = decode(frame1,para,pkt1,frame_pool);
+		int errno2 = decode(frame1,para,pkt1,frame_pool);
 	#ifdef DEBUG
 		end_time=clock();			
 		std::cout<<"decode Frame "<<i<<endl<< " decode and pkt read time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl;
 	#endif
 		int result = yuv_write(para, frame1);
-		
 }
 
 	fclose(para.video);	
 	fclose(para.out_video);	
-	//fclose(para.stream_reader);
+	fclose(para.stream_reader);
 	para.stream_reader = nullptr;
 	for(int i = 0; i < 3; ++i)
 		delete frame_pool[i];

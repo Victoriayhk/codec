@@ -54,13 +54,13 @@ class Node{
 
 class Tree{
 
-	void deserialize(unsigned char * stream,int &byte,int &bit,int &idx);
-	void serialize(unsigned char * stream,int &byte,int &bit,uint8_t * used_node_ids,int &idx);
+	void deserialize(unsigned char * stream,int &byte,int &bit,Node * node_list,int &idx);
+	void serialize(unsigned char * stream,int &byte,int &bit,int * used_node_ids,int &idx);
 public:
 	/**
 	* 子块数据
 	*/
-	uint8_t node_id;
+	uint32_t node_id;
 
 	Node * data;
 	/**
@@ -88,14 +88,14 @@ public:
 	/**
 	* 左上角相对坐标
 	*/
-	uint8_t left_top_h;
-	uint8_t left_top_w;
+	int left_top_h;
+	int left_top_w;
 	
 	/**
 	* 右下角相对坐标
 	*/
-	uint8_t right_bottom_h;
-	uint8_t right_bottom_w;
+	int right_bottom_h;
+	int right_bottom_w;
 
 	double score;
 	/**
@@ -103,12 +103,13 @@ public:
 	*/
 	
 
+
 	Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w);
 
 
-	int to_stream(unsigned char * stream,uint8_t * used_node_ids,int& num);
+	int to_stream(unsigned char * stream,int * used_node_ids,int& num);
 
-	int from_stream(unsigned char * stream,int &num);
+	int from_stream(unsigned char * stream,Node * node_list,int &num);
 
 };
 
@@ -141,11 +142,13 @@ public:
 	*/
 	Tree tree;
 
-	Node node_list[128];
+	Node node_list[1024];
 
 
-	uint8_t used_node_ids[128];
-
+	int used_node_ids[1024];
+	
+	unsigned char tree_buff[1024];
+	int tree_byte;
 
 	int curr_node;
 	
@@ -159,10 +162,19 @@ public:
 	ResidualBlock(const Block &);
 	ResidualBlock(int );
 	ResidualBlock(Block::BlockType type,int height , int width);
+	int copy(const ResidualBlock & src);
 	void getBlockSize(AVFormat &, int&, int&);
 	Node & get_node(int & id);
 	int to_stream(unsigned char *stream,AVFormat &para);
 	int from_stream(unsigned char *stream, int block_size, AVFormat &para);
+
+	int tree_to_stream();
+
+	int head_to_stream(unsigned char *stream,AVFormat &para);
+	int head_from_stream(unsigned char *stream, AVFormat &para);
+
+	int data_to_stream(unsigned char *stream,AVFormat &para);
+	int data_from_stream(unsigned char *stream, int block_size, AVFormat &para);
 
 	int clear();
 };
@@ -182,6 +194,8 @@ public:
 	int from_stream(unsigned char *stream, AVFormat &para);
 
 	int stream_write(AVFormat& para);
+	int stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & list);
+	int PKT::stream_read_one_component(AVFormat& para,std::vector<ResidualBlock> & list,Block::BlockType type);
 	int stream_read(AVFormat& para);
 
 	int block_head2stream(AVFormat& para,uint8_t** stream, ResidualBlock& rBlock, int *buff_len);

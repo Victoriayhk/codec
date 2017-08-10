@@ -12,6 +12,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#define WIN32
+
+
 #ifdef WIN32
 #include <malloc.h>
 extern int getopt(int, char**, char*);

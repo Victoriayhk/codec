@@ -17,7 +17,12 @@
 void BlockBufferPool::setValue(int h,int w,int8_t value){
 	frame[h * width + w] = value;
 }
-
+int BlockBufferPool::get_height(){
+	return height;
+}
+int BlockBufferPool::get_width(){
+	return width;
+}
 BlockBufferPool::BlockBufferPool(const BlockBufferPool & pool){
 	frame = pool.frame;
 	height = pool.height;

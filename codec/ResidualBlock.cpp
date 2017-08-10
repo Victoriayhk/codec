@@ -78,14 +78,13 @@ int Node::to_stream(unsigned char * stream){
 
 int Node::from_stream(unsigned char * stream){
 	int need_byte = 0;
-	prediction = *(stream + need_byte) & (unsigned char)0x7F;
+	prediction = (*(stream + need_byte)) & ((unsigned char)0x7F);
 	unsigned char type = *(stream + need_byte) & (unsigned char)0x80;
-
+	++need_byte;
 	if(type == (unsigned char)0x00){
 		pre_type = INTRA_PREDICTION;
 	}else{
 		pre_type = INTER_PREDICTION;
-		++need_byte;
 
 		mv[0] = *(stream + need_byte);
 		++need_byte;
@@ -99,7 +98,7 @@ Tree::Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w):
 				split_direction(NONE),left(nullptr),right(nullptr),
 				left_top_h(left_top_h),left_top_w(left_top_w),right_bottom_h(right_bottom_h),right_bottom_w(right_bottom_w){
 }
-void Tree::serialize(unsigned char * stream,int &byte,int &bit,uint8_t * used_node_ids,int &idx){
+void Tree::serialize(unsigned char * stream,int &byte,int &bit,int * used_node_ids,int &idx){
 	unsigned char * tmp = stream + byte;
 
 	if(bit == 0) *tmp = 0x00;
@@ -129,11 +128,11 @@ void Tree::serialize(unsigned char * stream,int &byte,int &bit,uint8_t * used_no
 	
 }
 
-void Tree::deserialize(unsigned char * stream,int &byte,int &bit,int &idx){
+void Tree::deserialize(unsigned char * stream,int &byte,int &bit,Node * node_list,int &idx){
 	unsigned char * tmp = stream + byte;
-	unsigned char type = (*tmp >> bit) & (unsigned char)0x03;
+	unsigned char type = ((*tmp) >> bit) & (unsigned char)0x03;
 	int w = right_bottom_w - left_top_w + 1;
-	int h = left_top_h - right_bottom_h + 1;
+	int h = right_bottom_h - left_top_h + 1;
 	if(type == 0x00){
 		bit += 2;
 		if(bit == 8){
@@ -144,6 +143,7 @@ void Tree::deserialize(unsigned char * stream,int &byte,int &bit,int &idx){
 		this->right = nullptr;
 		this->node_id = idx;
 		this->split_direction = NONE;
+		this->data = node_list + idx;
 		idx += 1;
 	}else{
 		if(type == 0x01){
@@ -161,25 +161,30 @@ void Tree::deserialize(unsigned char * stream,int &byte,int &bit,int &idx){
 			++byte;
 		}
 		this->node_id = -1;
-		this->left->deserialize(stream,byte,bit,idx);
-		this->right->deserialize(stream,byte,bit,idx);
+		this->left->deserialize(stream,byte,bit,node_list,idx);
+		this->right->deserialize(stream,byte,bit,node_list,idx);
 	}
 	
 }
 
 
-int Tree::to_stream(unsigned char * stream,uint8_t * used_node_ids,int &num){
+int Tree::to_stream(unsigned char * stream,int * used_node_ids,int &num){
 	int byte = 0,bit = 0,idx=0;
 	this->serialize(stream,byte,bit,used_node_ids,idx);
+	if(bit != 0){
+		byte += 1;
+	}
 	num = idx;
 
 	return byte;
 }
 
 
-int Tree::from_stream(unsigned char * stream,int &num){
+int Tree::from_stream(unsigned char * stream,Node * node_list,int &num){
 	int byte = 0,bit = 0,idx=0;
-	this->deserialize(stream,byte,bit,idx);
+	this->deserialize(stream,byte,bit,node_list,idx);
+	if(bit != 0)
+		byte += 1;
 	num = idx;
 
 	return byte;
@@ -210,6 +215,11 @@ inline int get_from_buffer(T &val, unsigned char *buffer, int length) {
 }
 
 
+int ResidualBlock::tree_to_stream(){
+	tree_byte = tree.to_stream(tree_buff,used_node_ids,curr_node);
+	return tree_byte;
+}
+
 /*
 * 将ResidualBlock写入流
 * 流stream需要预先开辟空间
@@ -233,7 +243,12 @@ int ResidualBlock::to_stream(unsigned char *stream,AVFormat &para) {
 
 		memset(used_node_ids,unsigned char(128),128);
 
-		p += tree.to_stream(p,used_node_ids,curr_node);
+		
+		if(tree_byte > 0){
+			p += save_to_buffer(tree_buff,p,tree_byte);
+		}else{
+			p += tree.to_stream(p,used_node_ids,curr_node);
+		}
 		int start_byte = 0;
 		for(int i = 0; i < curr_node; ++i){
 			if(used_node_ids[i] == (unsigned char)128) break;
@@ -259,7 +274,6 @@ int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &p
 	p += get_from_buffer(order, p);
 	p += get_from_buffer(block_type, p);
 
-
 	if(!para.is_tree){
 		p += get_from_buffer(type_slice, p);
 		if(type_slice==0){
@@ -275,22 +289,105 @@ int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &p
 		int num = 0;
 		tree.left_top_h = 0;
 		tree.left_top_w = 0;
-		tree.right_bottom_h = para.block_height - 1;
-		tree.right_bottom_w = para.block_width - 1;
-		p += tree.from_stream(p,num);
+		
+		getBlockSize(para,tree.right_bottom_h,tree.right_bottom_w);
+		tree.right_bottom_h -=  1;
+		tree.right_bottom_w -=  1;
+		p += tree.from_stream(p,node_list,num);
 
 		for(int i = 0; i < num; ++i){
 			p += node_list[curr_node ++].from_stream(p);
 		}
 	}
 
-	//if(data.size() != block_size){
 	data.resize(block_size);
-	//}
+
 	short *pdata = data.data();
 	p += get_from_buffer(pdata, p, block_size * sizeof(data[0]));
 	return p - stream;
 }
+
+
+int ResidualBlock::head_to_stream(unsigned char *stream,AVFormat &para){
+	unsigned char *p = stream;
+
+	if(!para.is_tree){
+		p += 1;
+		p += save_to_buffer(type_slice, p);
+		if(type_slice==0)
+			p += save_to_buffer(node[0], p);
+		if(type_slice==1){
+			for(int i=0;i<4;++i)
+				p += save_to_buffer(node[i], p);
+		}
+		uint8_t len = p - stream;
+		memcpy(stream,&len,sizeof(len));
+
+	}else{
+		memset(used_node_ids,-1,1024 * sizeof(int));
+
+		p += tree.to_stream(p,used_node_ids,curr_node);
+		int start_byte = 0;
+		for(int i = 0; i < curr_node; ++i){
+			if(used_node_ids[i] == -1) break;
+			p += node_list[used_node_ids[i]].to_stream(p); 
+		}
+	}
+
+	return p - stream;
+}
+
+int ResidualBlock::head_from_stream(unsigned char *stream, AVFormat &para){
+	unsigned char *p = stream;
+	if(!para.is_tree){
+		uint8_t len;
+		p += get_from_buffer(len,stream);
+		p += get_from_buffer(type_slice, p);
+		if(type_slice==0){
+			node.resize(1);
+			p += get_from_buffer(node[0], p);
+		}
+		if(type_slice==1){
+			node.resize(4);
+			for(int i=0;i<4;++i)
+				p += get_from_buffer(node[i], p);
+		}
+	}else{
+		int num = 0;
+		curr_node = 0;
+		tree.left_top_h = 0;
+		tree.left_top_w = 0;
+		
+		getBlockSize(para,tree.right_bottom_h,tree.right_bottom_w);
+		tree.right_bottom_h -=  1;
+		tree.right_bottom_w -=  1;
+		p += tree.from_stream(p,node_list,num);
+
+		for(int i = 0; i < num; ++i){
+			p += node_list[curr_node ++].from_stream(p);
+		}
+	}
+
+	return p - stream;
+
+}
+
+int ResidualBlock::data_to_stream(unsigned char *stream,AVFormat &para){
+	unsigned char *p = stream;
+	short *pdata = data.data(); 
+	p += save_to_buffer(pdata, p,data.size() * sizeof(data[0]));
+	return p - stream;
+}
+int ResidualBlock::data_from_stream(unsigned char *stream, int block_size, AVFormat &para){
+	unsigned char *p = stream;
+	data.resize(block_size);
+	short *pdata = data.data();
+	p += get_from_buffer(pdata, p, block_size * sizeof(data[0]));
+	return p - stream;
+}
+
+
+
 
 /*
 * 清空ResidualBlock,方便复用
@@ -303,6 +400,7 @@ int ResidualBlock::clear()
 	return 0;
 }
 
+ 
 /**
 * 为PKT预分配空间
 */
@@ -373,23 +471,82 @@ int PKT::from_stream(unsigned char *stream, AVFormat &para) {
 	return p - stream;
 }
 
+
+int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & list){
+
+	uint8_t *head_out = nullptr;
+	unsigned int head_out_len = 0;
+	uint8_t head_len_ch[4];
+
+	//uint8_t *point;
+	unsigned int len;
+	uint8_t *tmp_stream;
+	int block_num = para.block_num;
+	
+	static const int head_buffer_size = 2048;
+	static uint8_t *tmp_head_t = (uint8_t*)malloc(sizeof(uint8_t) * BASE_MALLOC_SIZE);
+	static uint8_t * tmp_head = (uint8_t*)malloc(sizeof(uint8_t) * head_buffer_size);
+	static int head_N = 1;
+	int one_head_len;
+	int head_len = 0;
+	uint8_t *head_point = tmp_head_t;
+	
+
+	entropy_encode_slice(list.data(),block_num,para,&tmp_stream,&len);
+
+
+	for(int i = 0;i<list.size();++i)
+	{
+		one_head_len = list[i].head_to_stream(tmp_head,para);
+
+		while(one_head_len + head_len > head_N * BASE_MALLOC_SIZE)
+		{
+			++head_N;
+			tmp_head_t = (uint8_t *)realloc(tmp_head_t, sizeof(uint8_t) * head_N * BASE_MALLOC_SIZE);
+			head_point = tmp_head_t + head_len;
+		}
+
+		memcpy(head_point,tmp_head,one_head_len);
+	
+		head_point += one_head_len;
+		head_len += one_head_len;
+	}
+
+
+	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
+	//toch4(head_out_len,head_len_ch);
+
+	fwrite(&head_out_len,sizeof(unsigned int),1,para.stream_writer);
+
+	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);
+	//fwrite(&len,sizeof(unsigned int),1,para.stream_writer);
+	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
+
+	free(tmp_stream);
+	free(head_out);
+	return 0;
+}
 /*
 * 将PKT中的数据写成流使用熵编码后进行文件写入
 */
 int PKT::stream_write(AVFormat& para)
 {
 	//对一帧的Y数据进行熵编码
-	//uint8_t *stream;
+	if(para.stream_writer == nullptr)
+	{
+		para.stream_writer = fopen(para.stream_file_name,"wb");
+	}
+	stream_write_one_component(para,Ylist);
+	stream_write_one_component(para,Ulist);
+	stream_write_one_component(para,Vlist);
+	/*
 	uint8_t *tmp_stream;
-	uint8_t *tmp_head_t = (uint8_t*)malloc(sizeof(uint8_t) * BASE_MALLOC_SIZE);
-	uint8_t *tmp_head;
-	uint8_t *head_point = tmp_head_t;
+	
+	
 	uint8_t *head_out = nullptr;
 	unsigned int head_out_len = 0;
 	uint8_t head_len_ch[4];
-	int one_head_len;
-	int head_N = 1;
-	int head_len = 0;
+
 	//uint8_t *point;
 	unsigned int len;
 	unsigned int stream_len;
@@ -401,15 +558,21 @@ int PKT::stream_write(AVFormat& para)
 
 	//std::cout<< "Stream wirte Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
 
+	static uint8_t *tmp_head_t = (uint8_t*)malloc(sizeof(uint8_t) * BASE_MALLOC_SIZE);
+	static uint8_t * tmp_head = (uint8_t*)malloc(sizeof(uint8_t) * 2048);
+	static int head_N = 1;
+	int one_head_len;
+	int head_len = 0;
+	uint8_t *head_point = tmp_head_t;
+	
 	for(int i = 0;i<Ylist.size();++i)
 	{
 		block_head2stream(para,&tmp_head,Ylist[i],&one_head_len);
-
-		//cout<<one_head_len<<" ";
 		
 		if(one_head_len + head_len > head_N * BASE_MALLOC_SIZE)
 		{
-			tmp_head_t = (uint8_t *)realloc(tmp_head_t, ++head_N);
+			++head_N;
+			tmp_head_t = (uint8_t *)realloc(tmp_head_t, sizeof(uint8_t) * head_N * BASE_MALLOC_SIZE);
 			head_point = tmp_head + head_len;
 		}
 
@@ -419,64 +582,32 @@ int PKT::stream_write(AVFormat& para)
 		head_len += one_head_len;
 	}
 
-	//if(PKT::stream_buff == nullptr)
-	//{
-	//	PKT::stream_buff = (uint8_t*)malloc(10000);
-	//}
 
 	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
 	toch4(head_out_len,head_len_ch);
-	//cout<<endl;
 
-	//cout<<len<<" ";
-
-	//stream = (uint8_t *)malloc(len);
-	//point = stream;
-	//memcpy(point,tmp_stream,len);
-
-	if(para.stream_writer == nullptr)
-	{
-		para.stream_writer = fopen(para.stream_file_name,"wb");
-	}
-
-
-	//for(int i=0;i<40;++i)
-	//{
-	//	cout<<(int)tmp_head_t[i]<<" ";
-	//}
-	//cout<<endl;
 	fwrite(head_len_ch,sizeof(uint8_t),4,para.stream_writer);
-	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);
-	//fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
+
+	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);;
 	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
 
-	free(tmp_head_t);
 	free(tmp_stream);
-	stream_len = len + head_out_len + 2;
+	//stream_len = len + head_out_len + 2;
 	
 	//对一帧的U数据进行熵编码
 	entropy_encode_slice(Ulist.data(),block_num,para,&tmp_stream,&len);
 
-	//for(int i = 0 ; i < 4 ; ++i)
-	//{
-	//	cout<<(int)tmp_stream[i]<<" ";
-	//}
-	//cout<<endl;
-	//int x;
-	//fromch4(x,tmp_stream);
-
-	tmp_head_t = (uint8_t*)malloc(sizeof(uint8_t) * BASE_MALLOC_SIZE);
 	head_point = tmp_head_t;
 	head_len = 0;
-	head_N = 1;
 
 	for(int i = 0;i<Ulist.size();++i)
 	{
 		block_head2stream(para,&tmp_head,Ulist[i],&one_head_len);
-		//cout<<one_head_len<<" ";
+
 		if(one_head_len + head_len > head_N * BASE_MALLOC_SIZE)
 		{
-			tmp_head_t = (uint8_t *)realloc(tmp_head_t, ++head_N);
+			++head_N;
+			tmp_head_t = (uint8_t *)realloc(tmp_head_t, sizeof(uint8_t) * head_N * BASE_MALLOC_SIZE);
 			head_point = tmp_head + head_len;
 		}
 
@@ -489,36 +620,29 @@ int PKT::stream_write(AVFormat& para)
 	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
 	toch4(head_out_len,head_len_ch);
 
-	//cout<<endl;
-	//cout<<len<<" ";
-	//stream = (uint8_t *)realloc(stream,stream_len + len);
-	//point = stream + stream_len;
-	//memcpy(point,tmp_stream,len);
 
 	fwrite(head_len_ch,sizeof(uint8_t),4,para.stream_writer);
 	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);
-	//fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
+
 	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
 
-	free(tmp_head_t);
 	free(tmp_stream);
-	stream_len = len + head_out_len + 2;
+	//stream_len = len + head_out_len + 2;
 	
 	//对一帧的V数据进行熵编码
 	entropy_encode_slice(Vlist.data(),block_num,para,&tmp_stream,&len);
 
-	tmp_head_t = (uint8_t*)malloc(sizeof(uint8_t) * BASE_MALLOC_SIZE);
 	head_point = tmp_head_t;
 	head_len = 0;
-	head_N = 1;
 
 	for(int i = 0;i<Vlist.size();++i)
 	{
 		block_head2stream(para,&tmp_head,Vlist[i],&one_head_len);
-		//cout<<one_head_len<<" ";
+
 		if(one_head_len + head_len > head_N * BASE_MALLOC_SIZE)
 		{
-			tmp_head_t = (uint8_t *)realloc(tmp_head_t, ++head_N);
+			++head_N;
+			tmp_head_t = (uint8_t *)realloc(tmp_head_t, sizeof(uint8_t) * head_N * BASE_MALLOC_SIZE);
 			head_point = tmp_head + head_len;
 		}
 
@@ -529,30 +653,90 @@ int PKT::stream_write(AVFormat& para)
 	}
 	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
 	toch4(head_out_len,head_len_ch);
-	//cout<<endl;
-	//cout<<len<<" "<<endl;
-	//stream = (uint8_t *)realloc(stream,stream_len + len);
-	//point = stream + stream_len;
-	//memcpy(point,tmp_stream,len);
+
 
 	fwrite(head_len_ch,sizeof(uint8_t),4,para.stream_writer);
 	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);
-	//fwrite(tmp_head_t,sizeof(uint8_t),head_len,para.stream_writer);
+
 	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
 
-	free(tmp_head_t);
 	free(tmp_stream);
-	//stream_len += len + head_len;
-	stream_len = len + head_out_len + 2;
 
+	*/
 	return 0;
 }
 
+int PKT::stream_read_one_component(AVFormat& para,std::vector<ResidualBlock> & list,Block::BlockType type){
+	
+	uint8_t *tmp_head_t = nullptr;
+
+	unsigned int out_len;
+	int head_len;
+	//unsigned int len = 1;
+	unsigned int stream_len = 0;
+	uint8_t stream_len_tmp[4];
+
+	static int head_N = 1;
+	static uint8_t * tmp_head = (uint8_t*)malloc(sizeof(uint8_t) * BASE_MALLOC_SIZE);
+	
+	int head_total_len = 0;
+	fread(&head_total_len,sizeof(unsigned int),1,para.stream_reader);
+
+
+	while(head_total_len > BASE_MALLOC_SIZE * head_N){
+		++head_N;
+		tmp_head = (uint8_t *)realloc(tmp_head, sizeof(uint8_t) * head_N * BASE_MALLOC_SIZE);
+	}
+	
+	fread(tmp_head,1,head_total_len,para.stream_reader);
+
+	huffman_decode_memory(tmp_head,head_total_len,&tmp_head_t,&out_len);
+
+	uint8_t *point = tmp_head_t;
+	int block_num = para.block_num;
+
+	for(int i = 0;i<para.block_num;++i)
+	{
+		list[i].block_id = i;
+		list[i].block_type = type;
+		head_len = list[i].head_from_stream(point,para);
+
+		point += head_len;
+	}
+
+	//fread(&stream_len,sizeof(int),1,para.stream_reader);
+	fread(stream_len_tmp,1,4,para.stream_reader);
+	fromch4(stream_len,stream_len_tmp);
+
+	static int stream_N = 1;
+	
+	static uint8_t * stream_buff = (uint8_t*)malloc(BASE_MALLOC_SIZE);
+
+	while(stream_len > BASE_MALLOC_SIZE * stream_N){
+		++stream_N;
+		stream_buff = (uint8_t *)realloc(stream_buff, sizeof(uint8_t) * stream_N * BASE_MALLOC_SIZE);
+	}
+
+	fread(stream_buff,sizeof(uint8_t),stream_len,para.stream_reader);
+
+	entropy_decode_slice(list.data(),block_num,para,stream_buff,BASE_MALLOC_SIZE * stream_N);
+	free(tmp_head_t);
+	return 0;
+}
 /*
 * 将流文件进行反熵编码后读入PKT
 */
 int PKT::stream_read(AVFormat& para)
 {
+
+	if(para.stream_reader == nullptr)
+	{
+		para.stream_reader = fopen(para.stream_file_name,"rb");
+	}
+	stream_read_one_component(para,Ylist,Block::Y);
+	stream_read_one_component(para,Ulist,Block::U);
+	stream_read_one_component(para,Vlist,Block::V);
+	/*
 	if(stream_buff == nullptr)
 		stream_buff = (uint8_t*)malloc(1000000);
 	uint8_t *tmp_head;
@@ -674,7 +858,7 @@ int PKT::stream_read(AVFormat& para)
 
 	entropy_decode_slice(Vlist.data(),block_num,para,stream_buff,len);
 	//free(tmp_stream);
-
+	*/
 	return 0;
 }
 
@@ -686,6 +870,11 @@ int PKT::stream_read(AVFormat& para)
 */
 int PKT::block_head2stream(AVFormat& para,uint8_t** stream, ResidualBlock& rBlock, int* buff_len)
 {
+
+
+	*buff_len = rBlock.head_to_stream(* stream,para);
+
+	/*
 	unsigned int head_len = 0;
 	head_len = sizeof(rBlock.block_id) + sizeof(rBlock.type_slice) + sizeof(rBlock.order); 
 	head_len += sizeof(rBlock.node.size());
@@ -697,6 +886,7 @@ int PKT::block_head2stream(AVFormat& para,uint8_t** stream, ResidualBlock& rBloc
 	uint8_t *point = *stream + sizeof(head_len);
 
 	uint8_t temp[4];
+
 
 	//写入block_id
 	toch4(rBlock.block_id, temp);
@@ -717,6 +907,9 @@ int PKT::block_head2stream(AVFormat& para,uint8_t** stream, ResidualBlock& rBloc
 	toch4(rBlock.node.size(), temp);
 	memcpy(point,temp,sizeof(rBlock.node.size()));
 	point += sizeof(rBlock.node.size());
+
+
+
 	for(int i=0;i<rBlock.node.size();++i)
 	{
 		toch4(rBlock.node[i], temp);
@@ -724,17 +917,21 @@ int PKT::block_head2stream(AVFormat& para,uint8_t** stream, ResidualBlock& rBloc
 		point += sizeof(rBlock.node[i]);
 	}
 
+
 	*buff_len = head_len + sizeof(head_len);
 
 	point = *stream;
 	toch4(head_len, temp);
 	memcpy(point,temp,sizeof(head_len));
+	*/
 
 	return 0;
 }
 
 int PKT::block_stream2head(AVFormat& para, uint8_t* stream, ResidualBlock& rBlock, int buff_len, int *head_length)
 {
+	*head_length = rBlock.head_from_stream(stream,para);
+	/*
 	unsigned int head_len = buff_len;
 	uint8_t* point = stream;
 
@@ -766,6 +963,7 @@ int PKT::block_stream2head(AVFormat& para, uint8_t* stream, ResidualBlock& rBloc
 	}
 
 	*head_length = head_len;
+	*/
 
 	return 0;
 }
