@@ -14,6 +14,7 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 {
 	if(f_x>=l_x||f_y>=l_y) return -1;
 
+	double AC_quantization;
 
 	double quantization_num;
 	int width = avFormat.block_width;
@@ -35,16 +36,25 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 		width /= 2;
 		height /= 2;
 	}
+	AC_quantization = 8.0;//直流分量的量化不得小于8
+	AC_quantization = quantization_num<AC_quantization?AC_quantization:quantization_num;
 
 	if(l_x>=width||l_y>=height) return -1;
 
-for(int i = f_x; i <= l_x ; ++i){
-	for(int j = f_y; j <= l_y ; ++j)
-	{
-			double tmp = round((double)block.data[i*width +j]/quantization_num);
+	double tmp;
+	for(int i = f_x; i <= l_x ; ++i){
+		for(int j = f_y; j <= l_y ; ++j)
+		{
+			//double tmp;
+			if(i % 4 == 0 && j % 4 == 0)
+			{
+				tmp = round((double)block.data[i*width +j]/AC_quantization);
+			}
+
+			tmp = round((double)block.data[i*width +j]/quantization_num);
 			block.data[i*width +j] = (int16_t)tmp;
+		}
 	}
-}
 	return 0;
 }
 
@@ -52,6 +62,7 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 {
 	if(f_x>=l_x||f_y>=l_y) return -1;
 
+	double AC_quantization = 8.0;
 	double quantization_num;
 	int width = avFormat.block_width;
 	int height = avFormat.block_height;
@@ -73,14 +84,17 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 		height /= 2;
 	}
 
+	AC_quantization = 8.0;
+	AC_quantization = quantization_num<AC_quantization?AC_quantization:quantization_num;
+
 	if(l_x>=width||l_y>=height) return -1;
 
-for(int i = f_x; i <= l_x ; ++i)
-{
-	for(int j = f_y; j <= l_y ; ++j)
+	for(int i = f_x; i <= l_x ; ++i)
 	{
-		block.data[i*width+ j] *= quantization_num;
+		for(int j = f_y; j <= l_y ; ++j)
+		{
+			block.data[i*width+ j] *= quantization_num;
+		}
 	}
-}
 	return 0;
 }
