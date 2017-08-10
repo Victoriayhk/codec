@@ -32,7 +32,7 @@ int main(int argc, char * argv[])
 
 #ifdef DEBUG
 	//para.quantizationY=20;
- //   para.quantizationU=40;
+ //   para.quantizationU=40;z
 	//para.quantizationV=40;
 	//para.frame_num=1;
 #endif
@@ -88,7 +88,8 @@ int main(int argc, char * argv[])
 	printf("=================================================================\n");
 #endif
 	fclose(para.stream_writer);
-		para.stream_writer = nullptr;
+	para.stream_writer = nullptr;
+	PKT::free_buff();
 	for(int i = 0; i < para.frame_num; ++i){
 	#ifdef DEBUG
 		start_time=clock();
@@ -111,6 +112,7 @@ int main(int argc, char * argv[])
 	fclose(para.out_video);	
 	fclose(para.stream_reader);
 	para.stream_reader = nullptr;
+	PKT::free_buff();
 	for(int i = 0; i < 3; ++i)
 		delete frame_pool[i];
 	proc_end=clock();

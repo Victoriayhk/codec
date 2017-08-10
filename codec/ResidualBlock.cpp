@@ -769,3 +769,18 @@ int PKT::block_stream2head(AVFormat& para, uint8_t* stream, ResidualBlock& rBloc
 
 	return 0;
 }
+
+void PKT::free_buff()	//gaowk 2017/8/10
+{
+	if(stream_buff != nullptr)
+	{
+		free(stream_buff);
+		stream_buff = nullptr;
+	}
+
+	if(head_buff != nullptr)
+	{
+		free(head_buff);
+		head_buff = nullptr;
+	}
+}

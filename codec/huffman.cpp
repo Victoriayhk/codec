@@ -1092,7 +1092,12 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	{
 		quantization_num = para.quantizationV;
 	}
-
+	//if(quantization_num>79)
+	//{
+	//	bit_num = 4;
+	//	b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
+	//	sign_size = (b_size) * 0.125;
+	//}
 	if(quantization_num>16)
 	{
 		bit_num = 8;
@@ -1163,25 +1168,41 @@ void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlo
 
 int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length)
 {
-	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1) / 2;
-	int sign_size = (b_size + 7) *0.125;
-
-	//uint8_t* sign_flag = (uint8_t *)malloc(sizeof(uint8_t) * (b_size + sign_size));
-	//uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
+	int bit_num = 9;
+	int quantization_num;
+	if(rBlock.block_type == Block::Y)
+	{
+		quantization_num = para.quantizationY;
+	}
+	else if(rBlock.block_type == Block::U)
+	{
+		quantization_num = para.quantizationU;
+	}
+	else
+	{
+		quantization_num = para.quantizationV;
+	}
+	
+	//if(quantization_num>79)
+	//{
+	//	bit_num = 4;
+	//}
+	if(quantization_num>16)
+	{
+		bit_num = 8;
+	}
+	
 
 	//uint8_t* p = sign_flag;
 	unsigned int out_length;
-
-	//for(int i = 0;i<95;++i)
-	//{
-	//	cout<<(int)stream[i]<<" ";
-	//}
-	//cout<<endl;
 	uint8_t* out_tmp = nullptr;
 
 	huffman_decode_memory(stream,buff_length,&out_tmp,&out_length);
 	//entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,out_tmp);
-	entropy_from_stream_bit(f_x,f_y,l_x,l_y,rBlock,para,out_tmp,8);
+
+	
+
+	entropy_from_stream_bit(f_x,f_y,l_x,l_y,rBlock,para,out_tmp,bit_num);
 
 	free(out_tmp);
 	return 0;
