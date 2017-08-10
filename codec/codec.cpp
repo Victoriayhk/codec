@@ -3,6 +3,7 @@
 
 #include "encode.h"
 #include "tree_encode.h"
+#include "tree_decode.h"
 #include "def.h"
 #include "io.h"
 #include "quantization.h"
@@ -13,17 +14,29 @@
 #include "huffman.h"
 #include <fstream>
 #include <string>
+#include "decode_buffer_pool.h"
+
 //#include "huffman.h"
 
+#define DEBUG
 int main(int argc, char * argv[])
 {
+	//head_test();
+	//return 0;
+
+	int proc_start,proc_end;
+	int start_time,end_time;
+	proc_start=clock();
 	AVFormat para;
 	para.load(argc,argv);
 
+#ifdef DEBUG
+	//para.quantizationY=20;
+ //   para.quantizationU=40;
+	//para.quantizationV=40;
+	//para.frame_num=1;
+#endif
 	Frame frame;
-	para.video = fopen(para.file_name,"rb");
-	para.out_video = fopen(para.out_file_name,"wb");	
-	//unsigned char * buff = new unsigned char[1000000000];
 	Frame frame1;
 	PKT pkt;
 	PKT pkt1;
@@ -31,51 +44,80 @@ int main(int argc, char * argv[])
 	frame.init(para);
 	frame1.init(para);
 	pkt1.init(para);
+	vector<FrameBufferPool *> frame_pool(3);
+	frame_pool[0] = new FrameBufferPool(10,BlockBufferPool(para.height,para.width));
+	frame_pool[1] = new FrameBufferPool(10,BlockBufferPool(para.height/2,para.width/2));
+	frame_pool[2] = new FrameBufferPool(10,BlockBufferPool(para.height/2,para.width/2));
+	para.video = fopen(para.file_name,"rb");
+	para.out_video = fopen(para.out_file_name,"wb");	
+	int errno1,errno2;
 
-	vector<FrameBufferPool> frame_pool(3,FrameBufferPool(10));
-	//para.frame_num = 1;
+	para.is_tree = false;
 	for(int i = 0; i < para.frame_num; ++i){
-		yuv_read(para,frame);
-		int start_time=clock();
-		int errno1 = encode(frame,para,pkt,frame_pool);
+	#ifdef DEBUG
+		start_time=clock();
+	#endif
 
-		int start_time_write=clock();
-		pkt.stream_write(para);
-		int end_time_write=clock();
-		//std::cout<<" Stream wirte Running time is: "<<static_cast<double>(end_time_write-start_time_write)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
-		
-		int end_time=clock();
-		std::cout<<"decode Frame "<<i<<endl<< " Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl<<"wirte Running time is:"<<static_cast<double>(end_time_write-start_time_write)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
+		yuv_read(para,frame);	
+
+	#ifdef DEBUG
+		end_time=clock();
+		std::cout<<" yuv readtime is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;			
+		start_time=clock();
+	#endif
+		if(para.is_tree)
+		errno1 = tree_encode(frame,para,pkt,frame_pool);  //encode
+		else
+		errno1 = encode(frame,para,pkt,frame_pool);  //encode
+	#ifdef DEBUG
+		end_time=clock();			
+		std::cout<<"encode Frame "<<i<<endl<< " encode time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl;
+		start_time=clock();
+	#endif
+		pkt.stream_write(para);                    //pkt_write
+	#ifdef DEBUG
+		end_time=clock();
+		std::cout<<"pkt write time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;			
 		for(auto i =0; i != 8;++i){
 			printf("%d ",pkt.Ylist[0].data[i]);
 		}
 		printf("\n");
-
+	#endif
 	}
+#ifdef DEBUG
 	printf("=================================================================\n");
+#endif
 	fclose(para.stream_writer);
-	para.stream_writer = nullptr;
+		para.stream_writer = nullptr;
 	for(int i = 0; i < para.frame_num; ++i){
-		int start_time=clock();
-
-		int start_time_read=clock();
-		pkt1.stream_read(para);
-		int end_time_read=clock();
-		//std::cout<< "Read Running time is: "<<static_cast<double>(end_time_read-start_time_read)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
-		int errno2 = decode(frame1,para,pkt1,frame_pool);
-		int result = yuv_write(para, frame1);
-		int end_time=clock();
+	#ifdef DEBUG
+		start_time=clock();
+	#endif
+		pkt1.stream_read(para);	
 		printf("decode Frame %d\n",i);
-		std::cout<<i<< "Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;	
-		std::cout<< "Read Running time is: "<<static_cast<double>(end_time_read-start_time_read)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;
-		//printf("decode Frame %d\n",i);
+
+		if(para.is_tree)
+		errno2 = tree_decode(frame1,para,pkt1,frame_pool);
+		else
+		errno2 = decode(frame1,para,pkt1,frame_pool);
+	#ifdef DEBUG
+		end_time=clock();			
+		std::cout<<"decode Frame "<<i<<endl<< " decode and pkt read time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl;
+	#endif
+		int result = yuv_write(para, frame1);
 	}
-	fclose(para.out_video);	
+
 	fclose(para.video);	
+	fclose(para.out_video);	
 	fclose(para.stream_reader);
 	para.stream_reader = nullptr;
-	//	int a;
-	//	scanf("%d",&a);
+	for(int i = 0; i < 3; ++i)
+		delete frame_pool[i];
+	proc_end=clock();
+	std::cout<< "process running time is: "<<static_cast<double>(proc_end-proc_start)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;
+	//#ifdef DEBUG
+	//	system("pause");
+	//#endif
 	return 0;
 
 }

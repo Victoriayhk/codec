@@ -1,4 +1,5 @@
 #include "Pattern.h"
+#include <math.h>
 
 // Pattern::FUN Pattern::getPattern(int pattern){
 //	return (FUN)patterns[pattern];
@@ -17,6 +18,7 @@ double Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int sta
 	double diff = 0;		
 	for (int i = start_r; i <= end_r && i + i_offset < para.height; i++)
 	{
+		int pos=i*block_w;
 		for (int j = start_c; j <= end_c && j + j_offset < para.width; j++) 
 		{
 			int16_t block_pool;
@@ -48,8 +50,8 @@ double Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int sta
 				block_pool=(int16_t)whole_frame.getValue(c_i, c_j);
 			else
 				block_pool=128;// 本帧内上方无可参考的像素, 与128求差
-			r_block.data[i * block_w + j] = (int16_t)block.data[i * block_w + j] - block_pool;
-			diff += r_block.data[i * block_w + j] * r_block.data[i * block_w + j];
+			r_block.data[pos + j] = (int16_t)block.data[pos + j] - block_pool;
+			diff += abs(r_block.data[pos + j]);
 		}
 	}
 	return diff;
@@ -63,6 +65,7 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 
 	for (int i = start_r; i <= end_r && i + i_offset < para.height; i++)
 	{
+		int pos=i*block_w;
 		for (int j = start_c; j <= end_c && j + j_offset < para.width; j++) 
 		{
 			int16_t block_pool;
@@ -94,8 +97,8 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 				block_pool=(int16_t)b_pool.getValue(c_i, c_j);
 			else
 				block_pool=128;// 本帧内上方无可参考的像素, 与128求差
-			blk.data[i * block_w + j] = (int16_t)r_block.data[i * block_w + j] + block_pool;
-			b_pool.setValue(i_offset + i, j_offset +j, blk.data[i * block_w + j]);
+			blk.data[pos + j] = (int16_t)r_block.data[pos + j] + block_pool;
+			b_pool.setValue(i_offset + i, j_offset +j, blk.data[pos + j]);
 		}
 	}
 }

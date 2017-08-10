@@ -2,7 +2,7 @@
 #define _DCT_H_
 
 #include "def.h"
-#include "stdint.h"
+#include <stdint.h>
 
 class DCT8x8Solver {
 	void matrix_dct(double org[][8], double des[][8]);

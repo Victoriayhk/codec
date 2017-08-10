@@ -10,44 +10,58 @@ class Node{
 	*  采用的预测方法
 	*  INTER_PREDICTION：帧间预测
 	*  INTRA_PREDICTION：帧内预测
+	*  1 bit
 	*/
 	enum {
-		//NONE,
 		INTER_PREDICTION,
 		INTRA_PREDICTION,
 	}pre_type;
 
 	/**
 	*  帧间预测的运动矢量
+	*  2 byte
 	*/
-	int mv[2];
+	int8_t mv[2];
 
 	/**
 	*  帧内预测的方法
+	*  7 bit
 	*/
-	int prediction;
+	uint8_t prediction;
 
 	/**
 	* 量化方法
+	* 4bit 
 	*/
 	int quantization;
 
 	/**
 	* 转换方式
+	* 4bit
 	*/
 	int convertion;
 
 
 	friend Tree;
+
+	
+	int to_stream(unsigned char * stream);
+
+	int from_stream(unsigned char * stream);
 };
 
 
 
 class Tree{
+
+	void deserialize(unsigned char * stream,int &byte,int &bit,int &idx);
+	void serialize(unsigned char * stream,int &byte,int &bit,uint8_t * used_node_ids,int &idx);
 public:
 	/**
 	* 子块数据
 	*/
+	uint8_t node_id;
+
 	Node * data;
 	/**
 	* 划分方式
@@ -90,6 +104,12 @@ public:
 	
 
 	Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w);
+
+
+	int to_stream(unsigned char * stream,uint8_t * used_node_ids,int& num);
+
+	int from_stream(unsigned char * stream,int &num);
+
 };
 
 
@@ -121,7 +141,12 @@ public:
 	*/
 	Tree tree;
 
-	Node node_list[128];
+	Node node_list[1024];
+
+
+	uint8_t used_node_ids[1024];
+
+
 	int curr_node;
 	
 public:
@@ -134,10 +159,11 @@ public:
 	ResidualBlock(const Block &);
 	ResidualBlock(int );
 	ResidualBlock(Block::BlockType type,int height , int width);
+	int copy(const ResidualBlock & src);
 	void getBlockSize(AVFormat &, int&, int&);
-	Node * get_node();
-	int to_stream(unsigned char *stream);
-	int from_stream(unsigned char *stream, int block_size);
+	Node & get_node(int & id);
+	int to_stream(unsigned char *stream,AVFormat &para);
+	int from_stream(unsigned char *stream, int block_size, AVFormat &para);
 
 	int clear();
 };
@@ -153,7 +179,7 @@ public:
 	int reserve(int size);
 	int init(AVFormat& para);
 	//PKT()
-	int to_stream(unsigned char *stream);
+	int to_stream(unsigned char *stream, AVFormat &para);
 	int from_stream(unsigned char *stream, AVFormat &para);
 
 	int stream_write(AVFormat& para);

@@ -31,6 +31,8 @@ AVFormat::AVFormat():
 	quantizationU = 5;
 	quantizationV = 5;
 
+	is_tree = false;
+
 }
 
 AVFormat::~AVFormat()
@@ -60,10 +62,18 @@ void AVFormat::setValue(const string & key, const string & value){
 		quantizationU = std::stod(value);
 	}else if(key.compare("quantizationV") == 0){
 		quantizationV = std::stod(value);
+
 	}else if(key.compare("fps")==0){
 		fps = std::stoi(value);
 	}else if(key.compare("frame_num") == 0){
 		frame_num = std::stoi(value);
+	}else if(key.compare("is_tree") == 0){
+		if(value.compare("true") == 0){
+			is_tree = true;
+		}else{
+			is_tree = false;
+		}
+		
 	}
 
 	block_num_per_row = (int)ceil(1.0 * width / block_width); 
