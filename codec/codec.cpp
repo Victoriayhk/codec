@@ -17,6 +17,7 @@
 #include "decode_buffer_pool.h"
 
 //#include "huffman.h"
+vector<int> Square_table;
 
 #define DEBUG
 int main(int argc, char * argv[])
@@ -27,11 +28,20 @@ int main(int argc, char * argv[])
 	AVFormat para;
 	para.load(argc,argv);
 
+	/*
+	** ³Ë·½±í
+	*/
+	for(int i=0;i<=600;++i)
+		Square_table.push_back(i*i);
+
+
+
 #ifdef DEBUG
-	para.quantizationY=20;
-    para.quantizationU=40;
-	para.quantizationV=40;
+	para.quantizationY=50;
+    para.quantizationU=50;
+	para.quantizationV=50;
 	para.frame_num=3;
+	para.eva_bit=50000;
 #endif
 	Frame frame;
 	Frame frame1;

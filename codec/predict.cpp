@@ -7,7 +7,7 @@
 #include "quantization.h"
 #include "dctInterface.h"
 
-
+//extern int N;
 int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,double & min_score)
 {
 	static InterMV tmp_inter_mv;
@@ -28,7 +28,7 @@ double calc_coef(int,int,int,int,Block & block,Block & block_another){
 }
 
 double intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,Block & buffer_block,AVFormat & para,double & min_score){
-	int pattern_num = 2;
+	int pattern_num = 4; //Ä£Ê½Êý
 
 	int best_pattern = 0;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
@@ -43,8 +43,6 @@ double intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,Bloc
 		}
 
 	}
-
-
 	return min_score;
 }
 
