@@ -27,6 +27,8 @@ public:
 	// 计算当前池内元素个数
     int size();
 
+	void clear() { pfront = pend = 0; }
+
 	// 池尾追加一个空间并返回, 如果池已经满了, 会自动循环使用之前的空间
     T& new_back();
 
@@ -133,7 +135,7 @@ T& CyclePool<T>::at(int order) {
 template<class T>
 T& CyclePool<T>::operator [] (int i) {
     if (i < 0) {
-        return pool[(pend - i) % pool_cap];
+        return pool[(pend + i) % pool_cap];
     } else {
         return pool[(pfront + i) % pool_cap];
     }

@@ -17,7 +17,6 @@
 #include "decode_buffer_pool.h"
 
 //#include "huffman.h"
-vector<int> Square_table;
 
 #define DEBUG
 int main(int argc, char * argv[])
@@ -28,20 +27,10 @@ int main(int argc, char * argv[])
 	AVFormat para;
 	para.load(argc,argv);
 
-	/*
-	** ³Ë·½±í
-	*/
-	for(int i=0;i<=600;++i)
-		Square_table.push_back(i*i);
-
-
-
 #ifdef DEBUG
-	para.quantizationY=50;
-    para.quantizationU=50;
-	para.quantizationV=50;
-	para.frame_num=3;
-	para.eva_bit=50000;
+	para.quantizationY=20;
+    para.quantizationU=40;
+	para.quantizationV=40;
 #endif
 	Frame frame;
 	Frame frame1;
@@ -66,8 +55,8 @@ int main(int argc, char * argv[])
 		yuv_read(para,frame);	
 
 	#ifdef DEBUG
-
 		end_time=clock();
+		std::cout<<"Frame "<< i << endl;
 		std::cout<<" yuv readtime is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;			
 		start_time=clock();
 	#endif
@@ -78,13 +67,13 @@ int main(int argc, char * argv[])
 			
 	#ifdef DEBUG
 		end_time=clock();			
-		std::cout<<"encode Frame "<<i<<endl<< " encode time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl;
+		std::cout<< " encode time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl;
 		start_time=clock();
 	#endif
 		pkt.stream_write(para);                    //pkt_write
 	#ifdef DEBUG
 		end_time=clock();
-		std::cout<<"pkt write time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;			
+		std::cout<<" pkt write time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;			
 		for(auto i =0; i != 8;++i){
 			printf("%d ",pkt.Ylist[0].data[i]);
 		}
@@ -98,6 +87,11 @@ int main(int argc, char * argv[])
 #endif
 	fclose(para.stream_writer);
 		para.stream_writer = nullptr;
+
+
+	for (int i = 0; i < 3; i++) frame_pool[i]->clear();
+
+
 	for(int i = 0; i < para.frame_num; ++i){
 	#ifdef DEBUG
 		start_time=clock();

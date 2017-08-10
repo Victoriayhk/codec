@@ -52,9 +52,6 @@ void ResidualBlock::getBlockSize(AVFormat &para, int& height, int& width)
 	}
 }
 
-
-
-
 	
 int Node::to_stream(unsigned char * stream){
 
@@ -65,9 +62,10 @@ int Node::to_stream(unsigned char * stream){
 	}else{
 		*(stream) |= (unsigned char)0x80;
 
-		*(stream +1 ) = mv[0];
+		memcpy(stream+1,mv,2);
+		//*(stream +1 ) = mv[0];
 		
-		*(stream + 2) = mv[1];
+		//*(stream + 2) = mv[1];
 
 		byte += 2;
 
@@ -86,14 +84,17 @@ int Node::from_stream(unsigned char * stream){
 	}else{
 		pre_type = INTER_PREDICTION;
 
-		mv[0] = *(stream + need_byte);
-		++need_byte;
-		mv[1] = *(stream + need_byte);
-		++need_byte;
+		memcpy(mv,stream+1,2);
+		need_byte += 2;
+		//mv[0] = *(stream + need_byte);
+		//++need_byte;
+		//mv[1] = *(stream + need_byte);
+		//++need_byte;
 	}
 	return need_byte;
 
 }
+
 Tree::Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w):node_id(-1),
 				split_direction(NONE),left(nullptr),right(nullptr),
 				left_top_h(left_top_h),left_top_w(left_top_w),right_bottom_h(right_bottom_h),right_bottom_w(right_bottom_w){

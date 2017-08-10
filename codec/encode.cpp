@@ -13,7 +13,7 @@
 using namespace std;
 
 
-const int N=4;  //预测方法的数量
+const int N=3;  //预测方法的数量
 
 
 int block_min(double *p,int N,int &pos,double &value)

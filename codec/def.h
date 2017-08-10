@@ -69,10 +69,6 @@ public:
 	FILE* stream_writer;
 	FILE* stream_reader;
 
-	/**
-	* 比特流评估常量
-	*/
-	double eva_bit;
 
 	/**
 	*  视频的高度与宽度
@@ -177,7 +173,4 @@ struct pos{
 		pos(){}
 		pos(int p1,int p2,int p3,int p4):left_top_x(p1),left_top_y(p2),right_bottom_x(p3),right_bottom_y(p4){} 
 };
-
-
-
 
