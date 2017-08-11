@@ -16,7 +16,7 @@ using namespace std;
 
 
 static map<int,Tree *> dp[3];
-inline double dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para);
+inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para);
 
 
 void clear_map( map<int,Tree *> &dp){
@@ -32,7 +32,7 @@ void clear_map( map<int,Tree *> &dp){
 	}
 	*/
 }
-double dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,Tree ** tree,int tph,int tpw,int brh,int brw,Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para){
+int dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,Tree ** tree,int tph,int tpw,int brh,int brw,Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para){
 
 	uint64_t tmp = ((uint64_t)block.block_id << 32) | ((uint64_t)tph << 24)| (tpw << 16) | (brh << 8)| brw;
 	int type = (int)block.block_type;
@@ -42,7 +42,7 @@ double dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_bloc
 		(*tree)->left_top_w = tpw;
 		(*tree)->right_bottom_h = brh;
 		(*tree)->right_bottom_w = brw;
-		double score = dp_encode_one_block(block, residual_block, **tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
+		int score = dp_encode_one_block(block, residual_block, **tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
 		(*tree) -> score = score;
 	}
 	/*
@@ -69,7 +69,7 @@ int encode_and_decode_with_tree(Block & block, ResidualBlock & residual_block,Tr
 	int h,w;
 	residual_block.getBlockSize(para,h,w);
 	if(tree.split_direction == Tree::NONE){
-		double score0;
+		int score0;
 		predict(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para,score0);
 		
 		
@@ -99,13 +99,13 @@ int encode_and_decode_with_tree(Block & block, ResidualBlock & residual_block,Tr
 	}
 	return 0;
 }
-inline double dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para) {
+inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para) {
 	
 
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	
-	double score0 = DBL_MAX, score1 = DBL_MAX, score2 = DBL_MAX;
-	tree.score = DBL_MAX;
+	int score0 = INT_MAX, score1 = INT_MAX, score2 = INT_MAX;
+	tree.score = INT_MAX;
 	
 	//Node * node = new Node;
 	int node_id = 0;

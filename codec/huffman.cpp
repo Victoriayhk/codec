@@ -13,7 +13,7 @@
 #include "huffman.h"
 #include<bitset>
 
-#define WIN32
+//#define WIN32
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -1081,7 +1081,7 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	int bit_num = 9;
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	int sign_size = (b_size + 7) * 0.125;
-	int quantization_num;
+	double quantization_num;
 	if(rBlock.block_type == Block::Y)
 	{
 		quantization_num = para.quantizationY;
@@ -1171,7 +1171,7 @@ void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlo
 int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length)
 {
 	int bit_num = 9;
-	int quantization_num;
+	double quantization_num;
 	if(rBlock.block_type == Block::Y)
 	{
 		quantization_num = para.quantizationY;
@@ -1637,7 +1637,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 	else if(bit_len == 4)
 	{
 		b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
-		sign_size = (b_size + 7)*0.125;
+		sign_size = (b_size + 7)/8;
 
 		*stream =(uint8_t*)malloc(sizeof(uint8_t) *(b_size + sign_size));
 
@@ -1699,6 +1699,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 
 		return 1;
 	}
+	return 0;
 }
 
 int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream, int bit_len)
@@ -1709,7 +1710,7 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 	}
 	else if(bit_len == 8)
 	{
-		uint8_t temp;
+//		uint8_t temp;
 		int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 
 		//uint8_t* num_flag = stream;
@@ -1746,7 +1747,7 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 	{
 		uint8_t temp;
 		int b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
-		int sign_size = (b_size + 7) *0.125;
+		int sign_size = (b_size + 7)/8;
 
 		uint8_t* sign_flag = stream;
 		uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
@@ -1797,4 +1798,5 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 
 		return 0;
 	}
+	return 0;
 }

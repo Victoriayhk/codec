@@ -97,7 +97,7 @@ public:
 	int right_bottom_h;
 	int right_bottom_w;
 
-	double score;
+	int score;
 	/**
 	* 提供当前节点表示的区域范围
 	*/

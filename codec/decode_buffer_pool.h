@@ -19,7 +19,7 @@ public:
 	int get_height();
 	int get_width();
 	//void set_block(Block & block,int tlh, int tlw, int brh, int brw,AVFormat &para);
-	void setValue(int h,int w,int8_t value);
+	void setValue(int h,int w,uint8_t value);
 	uint8_t getValue(int h,int w);
 	int clear();
 };

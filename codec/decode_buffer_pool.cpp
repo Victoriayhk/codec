@@ -14,7 +14,7 @@
 //	return 0;
 //}
 
-void BlockBufferPool::setValue(int h,int w,int8_t value){
+void BlockBufferPool::setValue(int h,int w,uint8_t value){
 	frame[h * width + w] = value;
 }
 int BlockBufferPool::get_height(){
