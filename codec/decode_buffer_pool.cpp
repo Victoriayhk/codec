@@ -28,7 +28,7 @@ BlockBufferPool::BlockBufferPool(const BlockBufferPool & pool){
 	height = pool.height;
 	width = pool.width;
 }
-int8_t BlockBufferPool::getValue(int h,int w){
+uint8_t BlockBufferPool::getValue(int h,int w){
 	return frame[h * width + w];
 }
 

@@ -65,7 +65,12 @@ void AVFormat::setValue(const string & key, const string & value){
 		quantizationU = std::stod(value);
 	}else if(key.compare("quantizationV") == 0){
 		quantizationV = std::stod(value);
-
+	}else if(key.compare("tree_mini_block_width") == 0){
+		tree_mini_block_width = std::stod(value);
+	}else if(key.compare("tree_mini_block_height") == 0){
+		tree_mini_block_height = std::stod(value);
+	}else if(key.compare("pattern_num") == 0){
+		pattern_num = std::stod(value);
 	}else if(key.compare("fps")==0){
 		fps = std::stoi(value);
 	}else if(key.compare("frame_num") == 0){

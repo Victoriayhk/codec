@@ -54,7 +54,7 @@ class Node{
 
 class Tree{
 
-	void deserialize(unsigned char * stream,int &byte,int &bit,Node * node_list,int &idx);
+	void deserialize(unsigned char * stream,int &byte,int &bit,Node * node_list,int &idx,int block_id,int type);
 	void serialize(unsigned char * stream,int &byte,int &bit,int * used_node_ids,int &idx);
 public:
 	/**
@@ -109,7 +109,7 @@ public:
 
 	int to_stream(unsigned char * stream,int * used_node_ids,int& num);
 
-	int from_stream(unsigned char * stream,Node * node_list,int &num);
+	int from_stream(unsigned char * stream,Node * node_list,int &num,int block_id,int type);
 
 };
 

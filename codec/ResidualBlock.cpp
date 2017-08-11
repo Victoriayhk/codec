@@ -4,6 +4,7 @@
 #include <time.h>
 #include <iostream>
 #include <queue>
+#include "cache.h"
 
 using namespace std;
 
@@ -134,7 +135,7 @@ void Tree::serialize(unsigned char * stream,int &byte,int &bit,int * used_node_i
 	
 }
 
-void Tree::deserialize(unsigned char * stream,int &byte,int &bit,Node * node_list,int &idx){
+void Tree::deserialize(unsigned char * stream,int &byte,int &bit,Node * node_list,int &idx,int block_id,int block_type){
 	unsigned char * tmp = stream + byte;
 	unsigned char type = ((*tmp) >> bit) & (unsigned char)0x03;
 	int w = right_bottom_w - left_top_w + 1;
@@ -154,12 +155,44 @@ void Tree::deserialize(unsigned char * stream,int &byte,int &bit,Node * node_lis
 	}else{
 		if(type == 0x01){
 			this->split_direction = HORIZONTAL;
-			this->left = new Tree(left_top_h,left_top_w,right_bottom_h,right_bottom_w - (w/2));
-			this->right = new Tree(left_top_h,left_top_w + (w/2),right_bottom_h,right_bottom_w);
+			
+			uint64_t tmp = ((uint64_t)block_id << 32) | ((uint64_t)left_top_h << 24) | ((uint64_t)left_top_w << 16) | ((uint64_t)right_bottom_h << 8) | (right_bottom_w- (w/2));
+			this->left = cache::getTree(block_type,tmp);
+			this->left->left_top_h = left_top_h;
+			this->left->left_top_w = left_top_w;
+			this->left->right_bottom_h = right_bottom_h;
+			this->left->right_bottom_w = (right_bottom_w- (w/2));
+
+			tmp = ((uint64_t)block_id << 32) | ((uint64_t)left_top_h << 24) | ((uint64_t)(left_top_w+ (w/2)) << 16) | ((uint64_t)right_bottom_h << 8) | right_bottom_w;
+			this->right = cache::getTree(block_type,tmp);
+			//this->left = cache::getTree(type,tmp);
+			this->right->left_top_h = left_top_h;
+			this->right->left_top_w = left_top_w+ (w/2);
+			this->right->right_bottom_h = right_bottom_h;
+			this->right->right_bottom_w = right_bottom_w;
+			
+			//this->left = new Tree(left_top_h,left_top_w,right_bottom_h,right_bottom_w - (w/2));
+			//this->right = new Tree(left_top_h,left_top_w + (w/2),right_bottom_h,right_bottom_w);
 		}else{
 			this->split_direction = VERTICAL;
-			this->left = new Tree(left_top_h,left_top_w,right_bottom_h - (h/2),right_bottom_w);
-			this->right = new Tree(left_top_h + (h/2),left_top_w,right_bottom_h,right_bottom_w);
+			
+			uint64_t tmp = ((uint64_t)block_id << 32) | ((uint64_t)left_top_h << 24) | ((uint64_t)left_top_w << 16) | ((uint64_t)(right_bottom_h- (h/2)) << 8) | (right_bottom_w);
+			this->left = cache::getTree(block_type,tmp);
+			this->left->left_top_h = left_top_h;
+			this->left->left_top_w = left_top_w;
+			this->left->right_bottom_h = right_bottom_h- (h/2);
+			this->left->right_bottom_w = (right_bottom_w);
+
+			tmp = ((uint64_t)block_id << 32) | ((uint64_t)(left_top_h+ (h/2)) << 24) | ((uint64_t)(left_top_w) << 16) | ((uint64_t)right_bottom_h << 8) | right_bottom_w;
+			this->right = cache::getTree(block_type,tmp);
+			//this->left = cache::getTree(type,tmp);
+			this->right->left_top_h = left_top_h+ (h/2);
+			this->right->left_top_w = left_top_w;
+			this->right->right_bottom_h = right_bottom_h;
+			this->right->right_bottom_w = right_bottom_w;
+			
+			//this->left = new Tree(left_top_h,left_top_w,right_bottom_h - (h/2),right_bottom_w);
+			//this->right = new Tree(left_top_h + (h/2),left_top_w,right_bottom_h,right_bottom_w);
 		}
 		bit += 2;
 		if(bit == 8){
@@ -167,8 +200,8 @@ void Tree::deserialize(unsigned char * stream,int &byte,int &bit,Node * node_lis
 			++byte;
 		}
 		this->node_id = -1;
-		this->left->deserialize(stream,byte,bit,node_list,idx);
-		this->right->deserialize(stream,byte,bit,node_list,idx);
+		this->left->deserialize(stream,byte,bit,node_list,idx,block_id,block_type);
+		this->right->deserialize(stream,byte,bit,node_list,idx,block_id,block_type);
 	}
 	
 }
@@ -186,15 +219,16 @@ int Tree::to_stream(unsigned char * stream,int * used_node_ids,int &num){
 }
 
 
-int Tree::from_stream(unsigned char * stream,Node * node_list,int &num){
+int Tree::from_stream(unsigned char * stream,Node * node_list,int &num,int block_id,int type){
 	int byte = 0,bit = 0,idx=0;
-	this->deserialize(stream,byte,bit,node_list,idx);
+	this->deserialize(stream,byte,bit,node_list,idx,block_id,type);
 	if(bit != 0)
 		byte += 1;
 	num = idx;
 
 	return byte;
 }
+
 
 template<typename T>
 inline int save_to_buffer(const T &val, unsigned char *buffer) {
@@ -299,7 +333,7 @@ int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &p
 		getBlockSize(para,tree.right_bottom_h,tree.right_bottom_w);
 		tree.right_bottom_h -=  1;
 		tree.right_bottom_w -=  1;
-		p += tree.from_stream(p,node_list,num);
+		p += tree.from_stream(p,node_list,num,block_id,(int)block_type);
 
 		for(int i = 0; i < num; ++i){
 			p += node_list[curr_node ++].from_stream(p);
@@ -367,7 +401,7 @@ int ResidualBlock::head_from_stream(unsigned char *stream, AVFormat &para){
 		getBlockSize(para,tree.right_bottom_h,tree.right_bottom_w);
 		tree.right_bottom_h -=  1;
 		tree.right_bottom_w -=  1;
-		p += tree.from_stream(p,node_list,num);
+		p += tree.from_stream(p,node_list,num,block_id,block_type);
 
 		for(int i = 0; i < num; ++i){
 			p += node_list[curr_node ++].from_stream(p);

@@ -28,17 +28,19 @@ int main(int argc, char * argv[])
 	int start_time,end_time;
 	proc_start=clock();
 	AVFormat para;
+
 	para.load(argc,argv);
 	for(int i=0;i<600;++i)
 		Square_table.push_back(i*i);
 
 #ifdef DEBUG
-	para.quantizationY=40;
-	 para.quantizationU=50;
-	para.quantizationV=50;
-	para.frame_num=200;
-	para.tree_mini_block_width=16;
-	para.tree_mini_block_height=16;
+	//para.quantizationY=20;
+	//para.quantizationU=20;
+	//para.quantizationV=20;
+	//para.frame_num=30;
+	//para.tree_mini_block_width=8;
+	//para.tree_mini_block_height=8;
+	//para.pattern_num=4;
 #endif
 	Frame frame;
 	Frame frame1;
