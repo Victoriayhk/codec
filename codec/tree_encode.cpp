@@ -19,7 +19,7 @@ static map<int,Tree *> dp[3];
 inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para,int,int,int thread_hold);
 
 
-void clear_map( map<int,Tree *> &dp){
+void clear_map(map<int,Tree *> &dp){
 	dp.clear();
 	/*
 	for (map<int,Tree *>::iterator p=dp.begin(); p!=dp.end(); ++p) 

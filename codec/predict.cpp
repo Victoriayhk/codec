@@ -7,7 +7,7 @@
 #include "quantization.h"
 #include "dctInterface.h"
 
-
+extern int TABLE[1500][1500];
 int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,int & min_score,int i_offset,int j_offset)
 {
 	static InterMV tmp_inter_mv;
@@ -60,7 +60,7 @@ int inter_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,FrameBu
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	static InterMV tmp_inter_mv;
 	static InterMVConverter convter;
-	score = Pattern::inter_predict(block,residual_block, tph, tpw, brh, brw, frame_pool, tmp_inter_mv, para, min_score,i_offset,j_offset);
+	score = Pattern::inter_predict(block,residual_block, tph, tpw, brh, brw, frame_pool, tmp_inter_mv, para, min_score,i_offset,j_offset)+para.contral_lamda/(TABLE[brh-tph][brw-tpw]+1);
 	if(score < min_score){
 		min_score = score;
 		tree.data->pre_type = Node::INTER_PREDICTION;
@@ -77,7 +77,7 @@ int inter_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,FrameBu
 
 int search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,int i_offset,int j_offset){
 	int score = INT_MAX;
-	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score,i_offset,j_offset);
+		intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score,i_offset,j_offset);
 	if(frame_pool.size() > 1)
 		inter_predict(block,residual_block,tree,frame_pool,buffer_block,para,score,i_offset,j_offset);
 	//else

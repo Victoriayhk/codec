@@ -34,6 +34,8 @@ AVFormat::AVFormat():
 	quantizationU = 5;
 	quantizationV = 5;
 
+	contral_lamda=0;
+
 	split_gamma = 0.5;
 
 	is_tree = true;
@@ -68,17 +70,19 @@ void AVFormat::setValue(const string & key, const string & value){
 	}else if(key.compare("quantizationV") == 0){
 		quantizationV = std::stod(value);
 	}else if(key.compare("tree_mini_block_width") == 0){
-		tree_mini_block_width = std::stod(value);
+		tree_mini_block_width = std::stoi(value);
 	}else if(key.compare("tree_mini_block_height") == 0){
-		tree_mini_block_height = std::stod(value);
+		tree_mini_block_height = std::stoi(value);
 	}else if(key.compare("pattern_num") == 0){
-		pattern_num = std::stod(value);
+		pattern_num = std::stoi(value);
 	}else if(key.compare("fps")==0){
 		fps = std::stoi(value);
 	}else if(key.compare("frame_num") == 0){
 		frame_num = std::stoi(value);
 	}else if(key.compare("split_gamma") == 0){
 		split_gamma = std::stod(value);
+	}else if(key.compare("contral_lamda") == 0){
+		contral_lamda = std::stoi(value);
 	}else if(key.compare("is_tree") == 0){
 		if(value.compare("true") == 0){
 			is_tree = true;

@@ -14,7 +14,7 @@
 #include<bitset>
 extern int TABLE[1500][1500];
 
-#define EIGHT_BIT_MODE 0
+#define EIGHT_BIT_MODE 15
 
 //#define WIN32
 

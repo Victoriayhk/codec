@@ -93,6 +93,11 @@ public:
 	int block_height;
 
 	/**
+	*	帧内和帧间控制参数
+	*/
+
+	int contral_lamda;
+	/**
 	*  控制树的高度
 	*/
 	int tree_mini_block_width;
