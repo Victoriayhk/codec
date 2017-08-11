@@ -10,8 +10,8 @@
 extern int TABLE[1500][1500];
 int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,int & min_score,int i_offset,int j_offset)
 {
-	static InterMV tmp_inter_mv;
-	static InterMVConverter convter;
+	InterMV tmp_inter_mv;
+	InterMVConverter convter;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	if(tree.data->pre_type == Node::INTRA_PREDICTION){
 		Pattern::predict(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,tree.data->prediction,para,i_offset,j_offset);
@@ -58,8 +58,8 @@ int intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBu
 int inter_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,int & min_score,int i_offset,int j_offset){
 	int score = min_score;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
-	static InterMV tmp_inter_mv;
-	static InterMVConverter convter;
+	InterMV tmp_inter_mv;
+	InterMVConverter convter;
 	score = Pattern::inter_predict(block,residual_block, tph, tpw, brh, brw, frame_pool, tmp_inter_mv, para, min_score,i_offset,j_offset)+para.contral_lamda/(TABLE[brh-tph][brw-tpw]+1);
 	if(score < min_score){
 		min_score = score;
@@ -94,8 +94,8 @@ int reverse_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,Block
 		//cnt++;
 		//if(cnt % 10000 == 0)
 		//	printf("Ö¡¼ä %d\n",cnt);
-		static InterMV tmp_inter_mv;
-		static InterMVConverter convter;
+		InterMV tmp_inter_mv;
+		InterMVConverter convter;
 		convter.value = tree.data->inter_value;
 		tmp_inter_mv.fi = convter.get_fi();
 		tmp_inter_mv.mv.first =  convter.get_mv1();

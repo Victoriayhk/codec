@@ -149,7 +149,14 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 			else
 			{
 			}
-			blk.data[pos + j] = (int16_t)r_block.data[pos + j] + block_pool;
+			int16_t tmp=(int16_t)r_block.data[pos + j] + block_pool;
+			if(tmp<0)
+				tmp=0;
+			else if(tmp>255)
+				tmp=255;
+			else
+			{}
+			blk.data[pos + j] = tmp;
 			b_pool.setValue(i_offset + i, j_offset +j, blk.data[pos + j]);
 		}
 	}
@@ -260,8 +267,13 @@ void Pattern::predict_inter_add(Block &block, const ResidualBlock &r_block, int 
 			int c_i = i_offset + i + r_i;			// 参考块的行坐标
 			int c_j = j_offset + j + r_j;			// 参考块的纵坐标
 
-			int tmp = (int16_t)r_block.data[TABLE[i][block_w] + j] + get_value_or_128(ref_pool, c_i, c_j);
-
+			int16_t tmp=(int16_t)r_block.data[TABLE[i][block_w] + j] + get_value_or_128(ref_pool, c_i, c_j);
+			if(tmp<0)
+				tmp=0;
+			else if(tmp>255)
+				tmp=255;
+			else
+			{}
 			block.data[TABLE[i][block_w] + j] = tmp;
 			cur_pool.setValue(i+i_offset, j+j_offset, tmp);
 		}

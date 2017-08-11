@@ -52,7 +52,7 @@ int main(int argc, char * argv[])
 	//para.quantizationY=20;
 	//para.quantizationU=20;
 	//para.quantizationV=20;
-	para.frame_num=20;
+	//para.frame_num=750;
 	//para.tree_mini_block_width=17;
 	//para.tree_mini_block_height=17;
 	para.pattern_num=4;
