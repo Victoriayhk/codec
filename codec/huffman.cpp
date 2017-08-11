@@ -14,6 +14,8 @@
 #include<bitset>
 extern int TABLE[1500][1500];
 
+#define EIGHT_BIT_MODE 0
+
 //#define WIN32
 
 #ifdef WIN32
@@ -1108,7 +1110,7 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	//	b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
 	//	sign_size = (b_size) * 0.125;
 	//}
-	if(quantization_num>16)
+	if(quantization_num>EIGHT_BIT_MODE)
 	{
 		bit_num = 8;
 		b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
@@ -1197,7 +1199,7 @@ int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	//{
 	//	bit_num = 4;
 	//}
-	if(quantization_num>16)
+	if(quantization_num>EIGHT_BIT_MODE)
 	{
 		bit_num = 8;
 	}
@@ -1556,12 +1558,8 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 
 			for(int i = f_y;i<l_y + 1;++i)
 			{
-				int temp = rBlock.data[TABLE[i][width] + j];
-				uint8_t tmp2;
-				if(temp>=0)
-				for(int j =f_x;j<l_x + 1;++j)
-				{
-					int temp = rBlock.data[i*width + j];
+				for(int j=f_x;j<l_x+1;++j){
+					int temp = rBlock.data[TABLE[i][width] + j];
 					uint8_t tmp2;
 					if(temp>=0)
 					{
@@ -1575,10 +1573,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 					*point++ = tmp2;
 				}
 			}
-
-			return b_size+ sign_size;
 		}
-
 		return b_size+ sign_size;
 	}
 	else if(bit_len == 4)
@@ -1665,7 +1660,6 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 			uint8_t temp;
 			int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 			int sign_size = 0;
-		int sign_size = 0;
 
 			uint8_t* p = stream;
 
@@ -1683,21 +1677,19 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 				{
 					if( *p%2 == 1)
 					{
-						rBlock.data[i*width + j] = -((*p + 1)>>1);
+						rBlock.data[TABLE[i][width] + j] = -((*p + 1)>>1);
 					}
 					else
 					{
-						rBlock.data[i*width + j] = (*p)>>1;
+						rBlock.data[TABLE[i][width] + j] = (*p)>>1;
 					}
 
 					++p;
 				}
-					rBlock.data[TABLE[i][width] + j] = (*p)>>1;
 
-			return b_size + sign_size;
+				return b_size + sign_size;
+			}
 		}
-
-		return b_size + sign_size;
 	}
 	else if(bit_len == 4)
 	{
