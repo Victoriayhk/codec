@@ -525,7 +525,7 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 
 	//uint8_t *point;
 	unsigned int len;
-	uint8_t *tmp_stream;
+	uint8_t *tmp_stream = nullptr;
 	int block_num = para.block_num;
 	
 	static const int head_buffer_size = 2048;
@@ -537,7 +537,7 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 	uint8_t *head_point = tmp_head_t;
 	
 
-	entropy_encode_slice(list.data(),block_num,para,&tmp_stream,&len);
+	entropy_encode_by_frame(list.data(),block_num,para,&tmp_stream,&len);
 
 
 	for(int i = 0;i<list.size();++i)
@@ -761,9 +761,16 @@ int PKT::stream_read_one_component(AVFormat& para,std::vector<ResidualBlock> & l
 		stream_buff = (uint8_t *)realloc(stream_buff, sizeof(uint8_t) * stream_N * BASE_MALLOC_SIZE);
 	}
 
+	//int stream_read_len;
+	//unsigned char stream_read_len_ch[4];
+	//fread(stream_read_len_ch,sizeof(int),stream_len,para.stream_reader);
+
+	//fromch4(stream_read_len,stream_read_len_ch);
+
 	fread(stream_buff,sizeof(uint8_t),stream_len,para.stream_reader);
 
-	entropy_decode_slice(list.data(),block_num,para,stream_buff,BASE_MALLOC_SIZE * stream_N);
+	//entropy_decode_slice(list.data(),block_num,para,stream_buff,BASE_MALLOC_SIZE * stream_N);
+	entropy_decode_by_frame(list.data(),block_num,para,stream_buff,stream_len);
 	free(tmp_head_t);
 	return 0;
 }

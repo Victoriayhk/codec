@@ -78,10 +78,10 @@ int inter_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,FrameBu
 int search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para){
 	int score = INT_MAX;
 	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score);
-	/*if(frame_pool.size() > 1)
-		inter_predict(block,residual_block,tree,frame_pool,buffer_block,para,score);*/
-	/*else
-		intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score);*/
+	if(frame_pool.size() > 1)
+		inter_predict(block,residual_block,tree,frame_pool,buffer_block,para,score);
+	//else
+	//	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score);
 	return score;
 }
 
