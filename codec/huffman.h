@@ -27,6 +27,9 @@ int entropy_encode_pkt(PKT& pkt, AVFormat& para, uint8_t **stream, unsigned int 
 int entropy_encode_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream,unsigned int* len);
 int entropy_decode_slice(ResidualBlock* rBlock,int block_len , AVFormat& para, uint8_t *stream, unsigned int buff_length);
 
+int entropy_encode_by_frame(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream,unsigned int* len);
+int entropy_decode_by_frame(ResidualBlock* rBlock,int block_len , AVFormat& para, uint8_t *stream, unsigned int buff_length);
+
 /*
 * 对残差block进行熵编码转化成流
 * 输入：
@@ -38,6 +41,8 @@ int entropy_decode_slice(ResidualBlock* rBlock,int block_len , AVFormat& para, u
 int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
 int entropy_encode_block_2(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
 
+int entropy_encode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
+
 /*
 * 将流逆熵编码并将数据保存在输入的残差block中
 * 输入：
@@ -48,6 +53,7 @@ int entropy_encode_block_2(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rB
 * buff_length		流长度
 */
 int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length);
+int entropy_decode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream);
 
 int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream, int bit_len = 8);
 int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream, int bit_len = 8);
