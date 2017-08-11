@@ -217,19 +217,19 @@ int tree_encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool*>  &
 	{	
 		#pragma omp section
 		{
-			cout<<omp_get_thread_num()<<endl;
+			//cout<<omp_get_thread_num()<<endl;
 			cache::reset(0);
 			tree_encode_one_component(frame.Yblock,pkt.Ylist,block_buffer[0],residual_block_buffer[0],para,*frame_pool[0]);
 		}	
 		#pragma omp section
 		{
-			cout<<omp_get_thread_num()<<endl;
+			//cout<<omp_get_thread_num()<<endl;
 			cache::reset(1);
 			tree_encode_one_component(frame.Ublock,pkt.Ulist,block_buffer[1],residual_block_buffer[1],para,*frame_pool[1]);
 		}
 		#pragma omp section
 		{
-			cout<<omp_get_thread_num()<<endl;
+			//cout<<omp_get_thread_num()<<endl;
 			cache::reset(2);
 			tree_encode_one_component(frame.Vblock,pkt.Vlist,block_buffer[2],residual_block_buffer[2],para,*frame_pool[2]);
 		}

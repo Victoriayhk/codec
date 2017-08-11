@@ -533,8 +533,6 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 
 	uint8_t *head_out = nullptr;
 	unsigned int head_out_len = 0;
-	uint8_t head_len_ch[4];
-
 	//uint8_t *point;
 	unsigned int len;
 	uint8_t *tmp_stream = nullptr;

@@ -1090,8 +1090,8 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	//int sign_size = (b_size + 7)*0.125;
 	int bit_num = 9;
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
-	int sign_size = (b_size + 7) * 0.125;
-	int quantization_num;
+	int sign_size = (b_size + 7) >>3;
+	double quantization_num;
 	if(rBlock.block_type == Block::Y)
 	{
 		quantization_num = para.quantizationY;
@@ -1181,7 +1181,7 @@ void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlo
 int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length)
 {
 	int bit_num = 9;
-	int quantization_num;
+	double quantization_num;
 	if(rBlock.block_type == Block::Y)
 	{
 		quantization_num = para.quantizationY;
@@ -1224,7 +1224,7 @@ int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream )
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
-	int sign_size = (b_size + 7)*0.125;
+	int sign_size = (b_size + 7)>>3;
 	//uint8_t* memory = (uint8_t*)malloc((l_x-f_x) * (l_y-f_y) * sizeof(uint8_t) * 2);
 	//if(stream == nullptr)
 	*stream =(uint8_t*)malloc(sizeof(uint8_t) *(b_size + sign_size));
@@ -1294,7 +1294,7 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream)
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
-	int sign_size = (b_size + 7) *0.125;
+	int sign_size = (b_size + 7) >>3;
 
 	uint8_t* sign_flag = stream;
 	uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
@@ -1657,7 +1657,6 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 			return unzag_zig(rBlock,para,stream,rBlock.left_zero_num);
 		}
 		else{
-			uint8_t temp;
 			int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 			int sign_size = 0;
 
@@ -1746,6 +1745,7 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 
 		return b_size + sign_size;
 	}
+	return 0;
 }
 
 int entropy_encode_by_frame(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream,unsigned int* len)
@@ -1793,7 +1793,7 @@ int entropy_encode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBl
 	int bit_num = 9;
 	//int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	//int sign_size = (b_size + 7) * 0.125;
-	int quantization_num;
+	double quantization_num;
 	if(rBlock.block_type == Block::Y)
 	{
 		quantization_num = para.quantizationY;
@@ -1867,7 +1867,7 @@ int entropy_decode_by_frame(ResidualBlock* rBlock,int block_num , AVFormat& para
 int entropy_decode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream)
 {
 	int bit_num = 9;
-	int quantization_num;
+	double quantization_num;
 	if(rBlock.block_type == Block::Y)
 	{
 		quantization_num = para.quantizationY;
