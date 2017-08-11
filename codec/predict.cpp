@@ -28,12 +28,12 @@ double calc_coef(int,int,int,int,Block & block,Block & block_another){
 }
 
 double intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,Block & buffer_block,AVFormat & para,double & min_score){
-	int pattern_num = 2;
+	
 
 	int best_pattern = 0;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	double score = min_score;
-	for(int i = 0; i < pattern_num; ++i){
+	for(int i = 0; i < para.pattern_num; ++i){
 		score = Pattern::predict(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,i,para);
 		score += calc_coef(tph,tpw,brh,brw,buffer_block,block);
 		if(score < min_score){
@@ -66,10 +66,11 @@ double inter_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,Fram
 
 double search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para){
 	double score = DBL_MAX;
-	if(frame_pool.size() > 1)
-		inter_predict(block,residual_block,tree,frame_pool,buffer_block,para,score);
-	else	
-		intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score);
+	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score);
+	/*if(frame_pool.size() > 1)
+		inter_predict(block,residual_block,tree,frame_pool,buffer_block,para,score);	*/
+	//else
+	//	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score);
 	return score;
 }
 

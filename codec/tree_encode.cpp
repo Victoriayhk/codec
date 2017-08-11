@@ -108,12 +108,12 @@ inline double dp_encode_one_block(Block & block, ResidualBlock & residual_block,
 
 	Tree * left, * right;
 	Tree * left2, * right2;
-	if (w >= 8 ) {
+	if (w >= para.tree_mini_block_width ) {
 		score1 = dp_encode_one_block_get_tree(block,residual_block,&left,tph,tpw,brh,brw - (w/2), block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para);
 		score1 += dp_encode_one_block_get_tree(block,residual_block,&right,tph,tpw+(w/2),brh,brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para);
 	}
 
-	if (h >= 8) {
+	if (h >= para.tree_mini_block_height) {
 		score2 = dp_encode_one_block_get_tree(block,residual_block,&left2,tph,tpw,brh - (h/2),brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para);
 		score2 += dp_encode_one_block_get_tree(block,residual_block,&right2,tph + (h/2),tpw,brh,brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para);
 	}
@@ -191,17 +191,17 @@ int tree_encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool*>  &
 	{	
 		#pragma omp section
 		{
-			
+			cout<<omp_get_thread_num()<<endl;
 			tree_encode_one_component(frame.Yblock,pkt.Ylist,block_buffer[0],residual_block_buffer[0],para,*frame_pool[0]);
 		}	
 		#pragma omp section
 		{
-			
+			cout<<omp_get_thread_num()<<endl;
 			tree_encode_one_component(frame.Ublock,pkt.Ulist,block_buffer[1],residual_block_buffer[1],para,*frame_pool[1]);
 		}
 		#pragma omp section
 		{
-		
+			cout<<omp_get_thread_num()<<endl;
 			tree_encode_one_component(frame.Vblock,pkt.Vlist,block_buffer[2],residual_block_buffer[2],para,*frame_pool[2]);
 		}
 	}

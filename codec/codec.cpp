@@ -15,10 +15,13 @@
 #include <fstream>
 #include <string>
 #include "decode_buffer_pool.h"
+#include <stdio.h>
 
 //#include "huffman.h"
 
+vector<int>  Square_table;
 #define DEBUG
+
 int main(int argc, char * argv[])
 {
 	int proc_start,proc_end;
@@ -26,11 +29,16 @@ int main(int argc, char * argv[])
 	proc_start=clock();
 	AVFormat para;
 	para.load(argc,argv);
+	for(int i=0;i<600;++i)
+		Square_table.push_back(i*i);
 
 #ifdef DEBUG
-	para.quantizationY=20;
-    para.quantizationU=40;
-	para.quantizationV=40;
+	//para.quantizationY=40;
+	// para.quantizationU=40;
+	//para.quantizationV=40;
+	para.frame_num=30;
+	//para.tree_mini_block_width=17;
+	//para.tree_mini_block_height=17;
 #endif
 	Frame frame;
 	Frame frame1;
@@ -45,7 +53,12 @@ int main(int argc, char * argv[])
 	frame_pool[1] = new FrameBufferPool(10,BlockBufferPool(para.height/2,para.width/2));
 	frame_pool[2] = new FrameBufferPool(10,BlockBufferPool(para.height/2,para.width/2));
 	para.video = fopen(para.file_name,"rb");
-	para.out_video = fopen(para.out_file_name,"wb");	
+	para.out_video = fopen(para.out_file_name,"wb");
+	if(para.out_video==NULL)
+	{
+		cout<<"你的输出文件处于打开状态！！！！！！！！！！！！！！"<<endl;
+		return 0;
+	}
 	int errno1,errno2;
 	for(int i = 0; i < para.frame_num; ++i){
 	#ifdef DEBUG
@@ -119,8 +132,9 @@ int main(int argc, char * argv[])
 		delete frame_pool[i];
 	proc_end=clock();
 	std::cout<< "process running time is: "<<static_cast<double>(proc_end-proc_start)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;
+	std::cerr<< "process running time is: "<<static_cast<double>(proc_end-proc_start)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;
 	#ifdef DEBUG
-		system("pause");
+		//system("pause");
 	#endif
 	return 0;
 

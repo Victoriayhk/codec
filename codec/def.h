@@ -77,6 +77,10 @@ public:
 	int width;
 
 	/**
+	*  帧内预测模式数
+	*/
+	int pattern_num;
+	/**
 	*  视频的fps与视频总帧数
 	*/
 	int fps;
@@ -87,6 +91,12 @@ public:
 	*/
 	int block_width;
 	int block_height;
+
+	/**
+	*  控制树的高度
+	*/
+	int tree_mini_block_width;
+	int tree_mini_block_height;
 	/**
 	* 宏块个数
 	*/

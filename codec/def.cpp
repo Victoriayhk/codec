@@ -14,7 +14,10 @@ AVFormat::AVFormat():
 
 	height = 720;
 	width = 1280;
+	pattern_num=4;
 
+	tree_mini_block_width=8;
+	tree_mini_block_height=8;
 	fps = 25;
     frame_num = 750;
 

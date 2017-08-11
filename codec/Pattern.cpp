@@ -8,6 +8,7 @@
 //	return pattern_number; 
 //}
 
+extern vector<int>  Square_table;
 #define IN_AREA(i, j, h, w) (0 <= i && i < h && 0 <= j && j <= w) 
 
 double Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int start_c,int end_r,int end_c, BlockBufferPool& whole_frame,int pattern_type, AVFormat &para){
@@ -21,37 +22,59 @@ double Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int sta
 		int pos=i*block_w;
 		for (int j = start_c; j <= end_c && j + j_offset < para.width; j++) 
 		{
-			int16_t block_pool;
+			int16_t block_pool=128;
 			int c_i=-1,c_j=-1;  //相对于每一帧的坐标
 			if(pattern_type == 0&&i_offset>0)// 竖向预测, 参考小块上方的一条像素	
 			{
 				c_i=start_r+i_offset - 1;
 				c_j=j_offset + j;
+				block_pool=(int16_t)whole_frame.getValue(c_i, c_j);
 			}
 			else if(pattern_type == 1&&j_offset>0)//横向预测, 参考小块左方的一条像素	
 			{
 				c_i=i_offset + i;
 				c_j=j_offset - 1+start_c;
+				block_pool=(int16_t)whole_frame.getValue(c_i, c_j);
 			}
-			else if (pattern_type == 2&&i_offset>0&&j_offset>0)//右斜45度预测, 参考斜左上方的一条像素	
+			else if (pattern_type == 2)//DC预测模式	
+			{
+				int left_row=0,left_col=0;
+				int top_row=0,top_col=0;
+				int left=128;int top=128;
+				if(i_offset>0)
+				{
+					top_row=start_r+i_offset - 1;
+					top_col=j_offset + j;
+					top=whole_frame.getValue(top_row, top_col);
+				}
+				if(j_offset>0)
+				{
+					left_row=i_offset + i;
+					left_col=j_offset - 1+start_c;
+					left=whole_frame.getValue(left_row,left_col);
+				}
+				block_pool=(top+left)/2;			
+			}
+			else if (pattern_type == 3&&(i_offset>0&&j_offset>0))//右斜45度预测, 参考斜左上方的一条像素	
 			{
 				if(i-start_r>j-start_c)
-				{
-						c_i=i-j+start_c+start_c-start_r-1+i_offset;
-						c_j=start_r-1+j_offset;
+				{		//c_i=i-j+start_c+start_c-start_r-1+i_offset;
+						c_i=i-j+start_c-1+i_offset;
+						c_j=start_c-1+j_offset;
 		        }
 				else
 				{
-						c_i=start_c-1+i_offset;
-						c_j=j-i-start_c+start_r+start_r-1+j_offset;
-				}					
-			}
-			if(c_i!=-1&&c_j!=-1)
+						c_i=start_r-1+i_offset;
+						//c_j=j-i-start_c+start_r+start_r-1+j_offset;
+						c_j=j-i+start_r-1+j_offset;
+				}
 				block_pool=(int16_t)whole_frame.getValue(c_i, c_j);
+			}
 			else
-				block_pool=128;// 本帧内上方无可参考的像素, 与128求差
+			{
+			}
 			r_block.data[pos + j] = (int16_t)block.data[pos + j] - block_pool;
-			diff += abs(r_block.data[pos + j]);
+			diff +=  Square_table[abs(r_block.data[pos + j])];
 		}
 	}
 	return diff;
@@ -68,42 +91,64 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 		int pos=i*block_w;
 		for (int j = start_c; j <= end_c && j + j_offset < para.width; j++) 
 		{
-			int16_t block_pool;
+			int16_t block_pool=128;
 			int c_i=-1,c_j=-1;
 			if(pattern_type == 0&&i_offset>0)// 竖向反预测, 参考小块上方的一条像素	
 			{
 				c_i=start_r+i_offset - 1;
 				c_j=j_offset + j;
+				block_pool=(int16_t)b_pool.getValue(c_i, c_j);
 			}
 			else if(pattern_type == 1&&j_offset>0)//横向反预测, 参考小块上方的一条像素	
 			{
 				c_i=i_offset + i;
 				c_j=j_offset - 1+start_c;
+				block_pool=(int16_t)b_pool.getValue(c_i, c_j);
 			}
-			else if (pattern_type == 2&&i_offset>0&&j_offset>0)//右斜45度预测, 参考斜左上方的一条像素	
+			else if (pattern_type == 2)//DC预测模式	
+			{
+				int left_row=0,left_col=0;
+				int top_row=0,top_col=0;
+				int left=128;int top=128;
+				if(i_offset>0)
+				{
+					top_row=start_r+i_offset - 1;
+					top_col=j_offset + j;
+					top=(int16_t)b_pool.getValue(top_row, top_col);
+				}
+				if(j_offset>0)
+				{
+					left_row=i_offset + i;
+					left_col=j_offset - 1+start_c;
+					left=(int16_t)b_pool.getValue(left_row,left_col);
+				}
+				block_pool=(top+left)/2;
+			}
+			else if (pattern_type == 3&&i_offset>0&&j_offset>0)//右斜45度预测, 参考斜左上方的一条像素	
 			{
 				if(i-start_r>j-start_c)
 				{
-						c_i=i-j+start_c+start_c-start_r-1+i_offset;
-						c_j=start_r-1+j_offset;
+						//c_i=i-j+start_c+start_c-start_r-1+i_offset;
+						c_i=i-j+start_c-1+i_offset;
+						c_j=start_c-1+j_offset;
 		        }
 				else
 				{
-						c_i=start_c-1+i_offset;
-						c_j=j-i-start_c+start_r+start_r-1+j_offset;
-				}					
-			}
-			if(c_i!=-1&&c_j!=-1)
+						c_i=start_r-1+i_offset;
+						//c_j=j-i-start_c+start_r+start_r-1+j_offset;
+						c_j=j-i+start_r-1+j_offset;
+
+				}
 				block_pool=(int16_t)b_pool.getValue(c_i, c_j);
+			}
 			else
-				block_pool=128;// 本帧内上方无可参考的像素, 与128求差
+			{
+			}
 			blk.data[pos + j] = (int16_t)r_block.data[pos + j] + block_pool;
 			b_pool.setValue(i_offset + i, j_offset +j, blk.data[pos + j]);
 		}
 	}
 }
-
-
 
 const int INTERPOLATE_NUM = 1;
 const int MAX_INTER_SEARCH_RANGE = 32;
