@@ -24,6 +24,9 @@ vector<int>  Square_table;
 
 int main(int argc, char * argv[])
 {
+	//zag_zig_test();
+	//return 0;
+
 	int proc_start,proc_end;
 	int start_time,end_time;
 	proc_start=clock();
@@ -37,10 +40,10 @@ int main(int argc, char * argv[])
 	//para.quantizationY=20;
 	//para.quantizationU=20;
 	//para.quantizationV=20;
-	//para.frame_num=30;
-	//para.tree_mini_block_width=8;
-	//para.tree_mini_block_height=8;
-	//para.pattern_num=4;
+	//para.frame_num=50;
+	para.tree_mini_block_width=8;
+	para.tree_mini_block_height=8;
+	para.pattern_num=4;
 #endif
 	Frame frame;
 	Frame frame1;

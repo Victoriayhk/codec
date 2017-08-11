@@ -10,26 +10,31 @@ using namespace std;
 
 #define BASE_MALLOC_SIZE 360000
 
+int head_len_test[3600 * 3];
+int head_len_test_i = 0;
+int head_len_test_out[3600 * 3];
+int head_len_test_out_i = 0;
+
 uint8_t* PKT::stream_buff = nullptr;
 uint8_t* PKT::head_buff = nullptr;
 
-ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type){
+ResidualBlock::ResidualBlock(Block::BlockType type,int height , int width):tree(0,0,height-1,width-1),block_type(type),left_zero_num(0){
 	data.clear();
 	data.resize(width*height);
 }
 
 
 
-ResidualBlock::ResidualBlock():tree(0,0,0,0),curr_node(0)
+ResidualBlock::ResidualBlock():tree(0,0,0,0),curr_node(0),left_zero_num(0)
 {
 }
 
 ResidualBlock::ResidualBlock(int blocktype):
-	tree(0,0,0,0),curr_node(0)
+	tree(0,0,0,0),curr_node(0),left_zero_num(0)
 {
 	block_type = (Block::BlockType)blocktype;
 }
-ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),curr_node(0),data(block.data.size()){
+ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),curr_node(0),data(block.data.size()),left_zero_num(0){
 	block_id = block.block_id;
 	block_type = block.block_type;
 	//tree = tree(0,0,height,width);
@@ -372,6 +377,9 @@ int ResidualBlock::head_to_stream(unsigned char *stream,AVFormat &para){
 			if(used_node_ids[i] == -1) break;
 			p += node_list[used_node_ids[i]].to_stream(p); 
 		}
+		//if(left_zero_num > 8)
+		*p = left_zero_num;
+		++p;
 	}
 
 	return p - stream;
@@ -406,6 +414,9 @@ int ResidualBlock::head_from_stream(unsigned char *stream, AVFormat &para){
 		for(int i = 0; i < num; ++i){
 			p += node_list[curr_node ++].from_stream(p);
 		}
+
+		left_zero_num = *p;
+		++p;
 	}
 
 	return p - stream;
@@ -521,7 +532,7 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 
 	//uint8_t *point;
 	unsigned int len;
-	uint8_t *tmp_stream;
+	uint8_t *tmp_stream = nullptr;
 	int block_num = para.block_num;
 	
 	static const int head_buffer_size = 2048;
@@ -533,7 +544,7 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 	uint8_t *head_point = tmp_head_t;
 	
 
-	entropy_encode_slice(list.data(),block_num,para,&tmp_stream,&len);
+	entropy_encode_by_frame(list.data(),block_num,para,&tmp_stream,&len);
 
 
 	for(int i = 0;i<list.size();++i)
@@ -558,7 +569,7 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 	//toch4(head_out_len,head_len_ch);
 
 	fwrite(&head_out_len,sizeof(unsigned int),1,para.stream_writer);
-
+	head_len_test[++head_len_test_i] = head_out_len;
 	fwrite(head_out,sizeof(uint8_t),head_out_len,para.stream_writer);
 	//fwrite(&len,sizeof(unsigned int),1,para.stream_writer);
 	fwrite(tmp_stream,sizeof(uint8_t),len,para.stream_writer);
@@ -722,7 +733,13 @@ int PKT::stream_read_one_component(AVFormat& para,std::vector<ResidualBlock> & l
 	
 	int head_total_len = 0;
 	fread(&head_total_len,sizeof(unsigned int),1,para.stream_reader);
+	head_len_test_out[head_len_test_out_i] = head_total_len;
+	if(head_len_test_out[head_len_test_out_i] != head_len_test[head_len_test_out_i])
+	{
+		int o = 0;
+	}
 
+	head_len_test_out_i++;
 
 	while(head_total_len > BASE_MALLOC_SIZE * head_N){
 		++head_N;
@@ -758,9 +775,16 @@ int PKT::stream_read_one_component(AVFormat& para,std::vector<ResidualBlock> & l
 		stream_buff = (uint8_t *)realloc(stream_buff, sizeof(uint8_t) * stream_N * BASE_MALLOC_SIZE);
 	}
 
+	//int stream_read_len;
+	//unsigned char stream_read_len_ch[4];
+	//fread(stream_read_len_ch,sizeof(int),stream_len,para.stream_reader);
+
+	//fromch4(stream_read_len,stream_read_len_ch);
+
 	fread(stream_buff,sizeof(uint8_t),stream_len,para.stream_reader);
 
-	entropy_decode_slice(list.data(),block_num,para,stream_buff,BASE_MALLOC_SIZE * stream_N);
+	//entropy_decode_slice(list.data(),block_num,para,stream_buff,BASE_MALLOC_SIZE * stream_N);
+	entropy_decode_by_frame(list.data(),block_num,para,stream_buff,stream_len);
 	free(tmp_head_t);
 	return 0;
 }

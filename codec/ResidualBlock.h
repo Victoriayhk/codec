@@ -151,6 +151,8 @@ public:
 	int tree_byte;
 
 	int curr_node;
+
+	uint8_t left_zero_num;
 	
 public:
 	/**

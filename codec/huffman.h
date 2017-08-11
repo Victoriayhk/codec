@@ -16,9 +16,9 @@
 #define positive 0
 #define negative 1
 
-
 //void entropy_test();
 void head_test();
+void zag_zig_test();
 
 int entropy_encode_pkt(PKT& pkt, AVFormat& para, uint8_t **stream, unsigned int *len);
 
@@ -27,6 +27,11 @@ int entropy_encode_pkt(PKT& pkt, AVFormat& para, uint8_t **stream, unsigned int 
 int entropy_encode_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream,unsigned int* len);
 int entropy_decode_slice(ResidualBlock* rBlock,int block_len , AVFormat& para, uint8_t *stream, unsigned int buff_length);
 
+int entropy_encode_by_frame(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream,unsigned int* len);
+int entropy_decode_by_frame(ResidualBlock* rBlock,int block_len , AVFormat& para, uint8_t *stream, unsigned int buff_length);
+
+int zag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream);
+int unzag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream, int zero_num);
 /*
 * 对残差block进行熵编码转化成流
 * 输入：
@@ -38,6 +43,8 @@ int entropy_decode_slice(ResidualBlock* rBlock,int block_len , AVFormat& para, u
 int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
 int entropy_encode_block_2(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
 
+int entropy_encode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
+
 /*
 * 将流逆熵编码并将数据保存在输入的残差block中
 * 输入：
@@ -48,6 +55,7 @@ int entropy_encode_block_2(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rB
 * buff_length		流长度
 */
 int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length);
+int entropy_decode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream);
 
 int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream, int bit_len = 8);
 int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream, int bit_len = 8);
@@ -67,7 +75,7 @@ int huffman_decode_memory(const unsigned char *bufin,
 						  uint32_t *pbufoutlen);
 
 template<typename T>
-void fromch4(T& result, uint8_t* val)	// 将任意类型的数转化为uint8_t的数组
+inline void fromch4(T& result, uint8_t* val)	// 将任意类型的数转化为uint8_t的数组
 {
 	result = 0;
 	int len = sizeof(T);
@@ -79,7 +87,7 @@ void fromch4(T& result, uint8_t* val)	// 将任意类型的数转化为uint8_t的数组
 }
 
 template<typename T>
-void toch4(T val, uint8_t* result)	// 将任意类型的数转化为uint8_t的数组
+inline void toch4(T val, uint8_t* result)	// 将任意类型的数转化为uint8_t的数组
 {
 	int len = sizeof(T);
 	for(int i = 0;i<len;++i)

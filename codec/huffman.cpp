@@ -27,6 +27,13 @@ using namespace std;
 
 unsigned int* s_len; 
 
+int zag_zig_4_4[16][2] = {
+	{3,3},{3,2},{2,3},{1,3},
+	{2,2},{3,1},{3,0},{2,1},
+	{1,2},{0,3},{0,2},{1,1},
+	{2,0},{1,0},{0,1},{0,0}
+};
+
 typedef struct huffman_node_tag
 {
 	unsigned char isLeaf;
@@ -1278,7 +1285,7 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 		sign_num = sign_num<<(8-sign_num);
 	}
 
-	return 1;
+	return b_size + sign_size;
 }
 
 int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream)
@@ -1297,28 +1304,8 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 
 	bool flag = 0;
 
-	//for(int i = 0;i<8;++i)
-	//{
-	//	for(int j=0;j<8;++j)
-	//	{
-	//		cout<<(int)(*p)<<" ";
-
-	//		++p;
-	//	}
-	//	cout<<endl;
-	//}
-	//cout<<endl;
-	//cout<<endl;
-	//for(int i = 0;i<b_size + sign_size;++i)
-	//{
-	//	cout<<(int)(*p)<<" ";
-	//	++p;
-	//}
-	//cout<<endl;
-
 	p = sign_flag + sign_size * sizeof(uint8_t);
 
-	//rBlock.data[0] = ;
 	for(int i = f_y;i<l_y +1;++i)
 	{
 		for(int j = f_x;j<l_x +1;++j)
@@ -1349,7 +1336,7 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 		}
 	}
 
-	return 0;
+	return b_size + sign_size;
 }
 
 int entropy_encode_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream, unsigned int* len)
@@ -1528,6 +1515,532 @@ int entropy_encode_pkt(PKT& pkt, AVFormat& para, uint8_t **stream, unsigned int 
 //	}
 //}
 
+int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream, int bit_len)
+{
+	int b_size;
+	int sign_size;
+
+	int width;
+	int height; 
+	rBlock.getBlockSize(para,height,width);
+
+	if(bit_len == 9)
+	{
+		return entropy_to_stream(f_x,f_y,l_x,l_y,rBlock,para,stream);
+	}
+	else if(bit_len == 8)
+	{
+		uint8_t zag_zig_stream[256];
+		int zero_num = zag_zig(rBlock,para,zag_zig_stream);
+		rBlock.left_zero_num = zero_num;
+		//ResidualBlock rBlock2 = ResidualBlock(rBlock.block_type,width,height);
+		//rBlock2.left_zero_num = zero_num;
+		//unzag_zig(rBlock2,para,zag_zig_stream,zero_num);
+		//if(zero_num>8)
+		if(1)
+		{
+			*stream =(uint8_t*)malloc(sizeof(uint8_t) *height * width - zero_num);
+			memcpy(*stream,zag_zig_stream,sizeof(uint8_t) *height * width - zero_num);
+
+			return height * width - zero_num;
+		}
+		else{
+			b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
+			sign_size = 0;
+			*stream =(uint8_t*)malloc(sizeof(uint8_t) *b_size);
+			uint8_t *point = *stream;
+
+			//width = 2;
+			//height = 2;
+
+			for(int i = f_y;i<l_y + 1;++i)
+			{
+				for(int j =f_x;j<l_x + 1;++j)
+				{
+					int temp = rBlock.data[i*width + j];
+					uint8_t tmp2;
+					if(temp>=0)
+					{
+						tmp2 = temp<<1;
+					}
+					else
+					{
+						tmp2 = ((-temp)<<1) - 1;
+					}
+					//*num_flag++ = temp;
+					*point++ = tmp2;
+				}
+			}
+
+			return b_size+ sign_size;
+		}
+	}
+	else if(bit_len == 4)
+	{
+		b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
+		sign_size = (b_size + 7)*0.125;
+
+		*stream =(uint8_t*)malloc(sizeof(uint8_t) *(b_size + sign_size));
+
+		uint8_t* memory = *stream;
+
+		uint8_t* sign_flag = memory;
+		uint8_t* num_flag = memory + sign_size * sizeof(uint8_t);
+
+		uint8_t sign_group = 0x0;
+		uint8_t num_group = 0x0;
+		int sign_num = 0;
+		int num_num = 0;
+		int width;
+		int height; 
+		rBlock.getBlockSize(para,height,width);
+
+		for(int i = f_y;i<l_y + 1;++i)
+		{
+			for(int j =f_x;j<l_x + 1;++j)
+			{
+				int temp = rBlock.data[i*width + j];
+				if(temp>=0)
+				{
+					sign_group = sign_group<<1;
+				}
+				else
+				{
+					sign_group = sign_group<<1;
+					sign_group |= 0x01;
+					temp = -rBlock.data[i*width + j];
+				}
+				++sign_num;
+				if(sign_num>=8)
+				{
+					sign_num = 0;
+					*sign_flag++ = sign_group;
+					sign_group = 0x00;
+				}
+
+				num_group <<= 4;
+				num_group |= (0x0f & temp);
+				num_num += 4;
+
+				if(num_num>=8)
+				{
+					num_num = 0;
+					*num_flag++ = temp;
+					num_group = 0x00;
+				}
+
+				//*num_flag++ = temp;
+			}
+		}
+		if(sign_num!=0)
+		{
+			*sign_flag = sign_group;
+			sign_num = sign_num<<(8-sign_num);
+		}
+
+		return b_size+ sign_size;
+	}
+}
+
+int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream, int bit_len)
+{
+	if(bit_len == 9)
+	{
+		return entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,stream);
+	}
+	else if(bit_len == 8)
+	{
+		if(1)
+		{
+			return unzag_zig(rBlock,para,stream,rBlock.left_zero_num);
+		}
+		else{
+			uint8_t temp;
+			int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
+			int sign_size = 0;
+
+			uint8_t* p = stream;
+
+			int width;
+			int height;
+			rBlock.getBlockSize(para,height,width);
+			//width = 2;
+			//height = 2;
+
+			bool flag = false;
+
+			for(int i = f_y;i<l_y +1;++i)
+			{
+				for(int j = f_x;j<l_x +1;++j)
+				{
+					if( *p%2 == 1)
+					{
+						rBlock.data[i*width + j] = -((*p + 1)>>1);
+					}
+					else
+					{
+						rBlock.data[i*width + j] = (*p)>>1;
+					}
+
+					++p;
+				}
+			}
+
+			return b_size + sign_size;
+		}
+	}
+	else if(bit_len == 4)
+	{
+		uint8_t temp;
+		int b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
+		int sign_size = (b_size + 7) *0.125;
+
+		uint8_t* sign_flag = stream;
+		uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
+
+		uint8_t* p = sign_flag;
+
+		int width;
+		int height;
+		rBlock.getBlockSize(para,height,width);
+
+		bool flag = 0;
+
+		p = num_flag;
+
+		for(int i = 0;i<b_size; ++i)
+		{
+			temp = *p++;
+			//bitset<8> b_temp(temp); 
+			for(int j = 1 ; j >= 0; --j)
+			{
+				rBlock.data[i*2 + 1 - j] = (temp>>(j*4)) & 0x0f;
+			}
+		}
+
+		//for(int i = f_y;i<l_y +1;++i)
+		//{
+		//	for(int j = f_x;j<l_x +1;++j)
+		//	{
+		//		rBlock.data[i*width + j] = *p;
+
+		//		++p;
+		//	}
+		//}
+
+		p = sign_flag;
+		for(int i =0;i<sign_size;++i)
+		{
+			temp = *p++;
+			bitset<8> b_temp(temp); 
+			for(int j=7;j>=0;--j)
+			{
+				if(b_temp[j] == 1)
+				{
+					reverse_data(f_x,f_y,l_x,l_y,i*8 + 7 - j,rBlock,width);
+				}
+			}
+		}
+
+		return b_size + sign_size;
+	}
+}
+
+int entropy_encode_by_frame(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream,unsigned int* len)
+{
+	int height,width;
+	unsigned int out_len = 0;
+	rBlock[0].getBlockSize(para,height,width);
+
+	int stream_len = 0;
+
+	//*stream = nullptr;
+	uint8_t* tmp_stream =  (uint8_t*)malloc(10000000);
+	uint8_t* huffman_tmp_buff = nullptr;
+
+	uint8_t* point = tmp_stream;
+
+	for(int i = 0 ;i < block_len ; ++i)
+	{
+		unsigned int code_stream_len = 0;
+		code_stream_len = entropy_encode_block_by_frame(0,0,width-1,height-1,rBlock[i],para, &point);
+
+		point += code_stream_len;
+		stream_len += code_stream_len;
+	}
+
+	huffman_encode_memory(tmp_stream,stream_len,&huffman_tmp_buff,&out_len);
+
+	*stream = (uint8_t*)malloc(10000000);
+	point = *stream;
+	toch4(out_len,point);
+	*len = out_len + 4;
+
+	point += 4;
+	memcpy(point,huffman_tmp_buff,out_len);
+
+	free(huffman_tmp_buff);
+	free(tmp_stream);
+
+	return 0;
+}
+
+int entropy_encode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream)
+{
+	unsigned int out_length;
+	int bit_num = 9;
+	//int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
+	//int sign_size = (b_size + 7) * 0.125;
+	int quantization_num;
+	if(rBlock.block_type == Block::Y)
+	{
+		quantization_num = para.quantizationY;
+	}
+	else if(rBlock.block_type == Block::U)
+	{
+		quantization_num = para.quantizationU;
+	}
+	else
+	{
+		quantization_num = para.quantizationV;
+	}
+	//if(quantization_num>79)
+	//{
+	//	bit_num = 4;
+	//	b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
+	//	sign_size = (b_size) * 0.125;
+	//}
+	if(quantization_num>16)
+	{
+		bit_num = 8;
+		//b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
+		//sign_size = 0;
+	}
+
+	uint8_t * tmp_stream = nullptr;
+	uint8_t* out_stream = nullptr;
+	uint8_t *point = *stream;
+	out_length = entropy_to_stream_bit(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream,bit_num);
+
+	uint8_t *p = tmp_stream;
+	point = *stream;
+	memcpy(point,tmp_stream,out_length);
+
+	free(tmp_stream);
+	free(out_stream);
+
+	return out_length;
+}
+
+int entropy_decode_by_frame(ResidualBlock* rBlock,int block_num , AVFormat& para, uint8_t *stream, unsigned int buff_length)
+{
+	int height,width;
+	rBlock[0].getBlockSize(para,height,width);
+
+	int block_len = 0;
+	//int stream_len;
+	//unsigned char stream_len_ch[4];
+	uint8_t* out_stream = nullptr;
+	unsigned int out_len = 0;
+
+	int x = 0;
+	//fromch4(stream_len,stream);
+
+	uint8_t* p = stream;
+
+	huffman_decode_memory(p,buff_length,&out_stream,&out_len);
+
+	p = out_stream;
+
+	for(int i = 0 ;i < block_num ; ++i)
+	{
+		block_len = entropy_decode_block_by_frame(0,0,height-1,width-1,rBlock[i],para,p);
+		//if(block_len == )
+		p += block_len;
+	}
+
+	return 0;
+}
+
+int entropy_decode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream)
+{
+	int bit_num = 9;
+	int quantization_num;
+	if(rBlock.block_type == Block::Y)
+	{
+		quantization_num = para.quantizationY;
+	}
+	else if(rBlock.block_type == Block::U)
+	{
+		quantization_num = para.quantizationU;
+	}
+	else
+	{
+		quantization_num = para.quantizationV;
+	}
+	
+	//if(quantization_num>79)
+	//{
+	//	bit_num = 4;
+	//}
+	if(quantization_num>16)
+	{
+		bit_num = 8;
+	}
+
+	return entropy_from_stream_bit(f_x,f_y,l_x,l_y,rBlock,para,stream,bit_num);
+
+	//free(out_tmp);
+
+}
+
+int zag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream)
+{
+	int height,width;
+	rBlock.getBlockSize(para,height,width);
+	uint8_t* point = zag_zig_stream;
+	int block_id = 0;
+	int zero_num = 0;
+	int length = 0;
+	int x = 0;
+	int y = 0;
+	bool last_zero = true;
+	int16_t tmp_16 = 0;
+	uint8_t tmp;
+	int i = 0;
+	int zag_zig_stream_len = 0;
+	int block_num_row = 0;
+	int block_num = 0;
+
+	if(height == 16&&width == 16)
+	{
+		block_num_row = 4;
+		block_num = 16;
+	}
+	else if(height == 8 && width == 8)
+	{
+		block_num_row = 2;
+		block_num = 4;
+	}
+	else return -1;
+
+	//if(rBlock.data[width*3 + 3] != 0) return -1;
+
+	while(i < 16)
+	{
+		x = zag_zig_4_4[i][0];
+		y = zag_zig_4_4[i][1];
+
+		for(block_id = 0;block_id<block_num;++block_id)
+		{
+			tmp_16 = rBlock.data[width*x + y + block_id/block_num_row * width * 4 + block_id % block_num_row * 4];
+
+			if(last_zero)
+			{
+				if(tmp_16 != 0)
+				{
+					last_zero = false;
+					//if(zero_num < 8) return -1;		//尾0个数小于8时不使用zag_zig排列方式
+
+				}
+				else
+				{
+					zero_num++;
+				}
+			}
+			if(!last_zero) 
+			{
+				if(tmp_16>=0)
+				{
+					tmp = tmp_16<<1;
+				}
+				else
+				{
+					tmp = ((-tmp_16)<<1) - 1;
+				}
+				zag_zig_stream[zag_zig_stream_len++] = tmp;
+			}
+		}
+
+		++i;
+	}
+
+	if(last_zero&&zero_num!=0)		//全0串仍要存储一个0
+	{
+		zag_zig_stream[zag_zig_stream_len] = 0;
+		return zero_num - 1;
+	}
+	return zero_num;
+}
+
+int unzag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream, int zero_num)
+{
+	int height,width;
+	rBlock.getBlockSize(para,height,width);
+	uint8_t* point = zag_zig_stream;
+	int block_id = 0;
+	int length = 0;
+	int x = 0;
+	int y = 0;
+	bool last_zero = true;
+	uint8_t tmp = 0;
+	int16_t tmp_16 = 0;
+	int i = 0;
+	int zag_zig_stream_len = 0;
+	int block_num_row = 0;
+	int block_num = 0;
+	int zag_zig_i = 0;
+
+	if(height == 16&&width == 16)
+	{
+		block_num_row = 4;
+		block_num = 16;
+	}
+	else if(height == 8 && width == 8)
+	{
+		block_num_row = 2;
+		block_num = 4;
+	}
+	else return -1;
+
+	if(rBlock.left_zero_num == 255)
+	{
+	}
+
+	while(i < 16)
+	{
+		x = zag_zig_4_4[i][0];
+		y = zag_zig_4_4[i][1];
+
+		for(block_id = 0;block_id<block_num;++block_id)
+		{
+			if(zero_num > 0)
+			{
+				tmp = 0;
+				--zero_num;
+			}
+			else
+			{
+				tmp = zag_zig_stream[zag_zig_i];
+				++zag_zig_i;
+			}
+
+			if( tmp%2 == 1)
+			{
+				rBlock.data[width*x + y + block_id/block_num_row * width * 4 + block_id % block_num_row * 4] = -((tmp + 1)>>1);
+			}
+			else
+			{
+				rBlock.data[width*x + y + block_id/block_num_row * width * 4 + block_id % block_num_row * 4] = (tmp)>>1;
+			}
+		}
+
+		++i;
+	}
+
+	return height*width - rBlock.left_zero_num;
+}
+
 void head_test()
 {
 	AVFormat para;
@@ -1595,206 +2108,37 @@ void head_test()
 	return;
 }
 
-int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream, int bit_len)
+void zag_zig_test()
 {
-	int b_size;
-	int sign_size;
-	if(bit_len == 9)
-	{
-		return entropy_to_stream(f_x,f_y,l_x,l_y,rBlock,para,stream);
-	}
-	else if(bit_len == 8)
-	{
-		b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
-		*stream =(uint8_t*)malloc(sizeof(uint8_t) *b_size);
-		uint8_t *point = *stream;
+	AVFormat para;
+	para.block_num = 10;
+	para.height = 1280;
+	para.width = 720;
 
-		int width;
-		int height; 
-		rBlock.getBlockSize(para,height,width);
-		//width = 2;
-		//height = 2;
+	para.block_height = 16;
+	para.block_width = 16;
 
-		for(int i = f_y;i<l_y + 1;++i)
+	PKT pkt;
+	pkt.init(para);
+	ResidualBlock rblock = ResidualBlock(Block::Y,16,16);
+	ResidualBlock rblock2= ResidualBlock(Block::Y,16,16);
+	uint8_t tmp[1000];
+	memset(tmp,0,1000);
+
+	rblock.block_type = Block::Y;
+	for(int i = 0 ; i< 16 ;++i)
+	{
+		for(int j = 0;j<16;++j)
 		{
-			for(int j =f_x;j<l_x + 1;++j)
-			{
-				int temp = rBlock.data[i*width + j];
-				uint8_t tmp2;
-				if(temp>=0)
-				{
-					tmp2 = temp<<1;
-				}
-				else
-				{
-					tmp2 = ((-temp)<<1) - 1;
-				}
-				//*num_flag++ = temp;
-				*point++ = tmp2;
-			}
+			rblock.data[i * 16 + j] = j%4 + i * 4;
 		}
 	}
-	else if(bit_len == 4)
-	{
-		b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
-		sign_size = (b_size + 7)*0.125;
 
-		*stream =(uint8_t*)malloc(sizeof(uint8_t) *(b_size + sign_size));
+	rblock.data[3*16+3] = 0;
 
-		uint8_t* memory = *stream;
+	int zero = zag_zig(rblock,para,tmp);
 
-		uint8_t* sign_flag = memory;
-		uint8_t* num_flag = memory + sign_size * sizeof(uint8_t);
+	unzag_zig(rblock2,para,tmp,zero);
 
-		uint8_t sign_group = 0x0;
-		uint8_t num_group = 0x0;
-		int sign_num = 0;
-		int num_num = 0;
-		int width;
-		int height; 
-		rBlock.getBlockSize(para,height,width);
-
-		for(int i = f_y;i<l_y + 1;++i)
-		{
-			for(int j =f_x;j<l_x + 1;++j)
-			{
-				int temp = rBlock.data[i*width + j];
-				if(temp>=0)
-				{
-					sign_group = sign_group<<1;
-				}
-				else
-				{
-					sign_group = sign_group<<1;
-					sign_group |= 0x01;
-					temp = -rBlock.data[i*width + j];
-				}
-				++sign_num;
-				if(sign_num>=8)
-				{
-					sign_num = 0;
-					*sign_flag++ = sign_group;
-					sign_group = 0x00;
-				}
-
-				num_group <<= 4;
-				num_group |= (0x0f & temp);
-				num_num += 4;
-
-				if(num_num>=8)
-				{
-					num_num = 0;
-					*num_flag++ = temp;
-					num_group = 0x00;
-				}
-
-				//*num_flag++ = temp;
-			}
-		}
-		if(sign_num!=0)
-		{
-			*sign_flag = sign_group;
-			sign_num = sign_num<<(8-sign_num);
-		}
-
-		return 1;
-	}
-}
-
-int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream, int bit_len)
-{
-	if(bit_len == 9)
-	{
-		return entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,stream);
-	}
-	else if(bit_len == 8)
-	{
-		uint8_t temp;
-		int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
-
-		//uint8_t* num_flag = stream;
-		//uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
-
-		uint8_t* p = stream;
-
-		int width;
-		int height;
-		rBlock.getBlockSize(para,height,width);
-		//width = 2;
-		//height = 2;
-
-		bool flag = false;
-
-		for(int i = f_y;i<l_y +1;++i)
-		{
-			for(int j = f_x;j<l_x +1;++j)
-			{
-				if( *p%2 == 1)
-				{
-					rBlock.data[i*width + j] = -((*p + 1)>>1);
-				}
-				else
-				{
-					rBlock.data[i*width + j] = (*p)>>1;
-				}
-
-				++p;
-			}
-		}
-	}
-	else if(bit_len == 4)
-	{
-		uint8_t temp;
-		int b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
-		int sign_size = (b_size + 7) *0.125;
-
-		uint8_t* sign_flag = stream;
-		uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);
-
-		uint8_t* p = sign_flag;
-
-		int width;
-		int height;
-		rBlock.getBlockSize(para,height,width);
-
-		bool flag = 0;
-
-		p = num_flag;
-
-		for(int i = 0;i<b_size; ++i)
-		{
-			temp = *p++;
-			//bitset<8> b_temp(temp); 
-			for(int j = 1 ; j >= 0; --j)
-			{
-				rBlock.data[i*2 + 1 - j] = (temp>>(j*4)) & 0x0f;
-			}
-		}
-
-		//for(int i = f_y;i<l_y +1;++i)
-		//{
-		//	for(int j = f_x;j<l_x +1;++j)
-		//	{
-		//		rBlock.data[i*width + j] = *p;
-
-		//		++p;
-		//	}
-		//}
-
-		p = sign_flag;
-		for(int i =0;i<sign_size;++i)
-		{
-			temp = *p++;
-			bitset<8> b_temp(temp); 
-			for(int j=7;j>=0;--j)
-			{
-				if(b_temp[j] == 1)
-				{
-					reverse_data(f_x,f_y,l_x,l_y,i*8 + 7 - j,rBlock,width);
-				}
-			}
-		}
-
-		return 0;
-	}
+	return;
 }

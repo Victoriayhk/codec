@@ -254,7 +254,7 @@ void Pattern::predict_inter_sub(const Block &block,ResidualBlock &r_block, int s
 
 			int tmp = (int16_t)block.data[i * block_w + j] - get_value;
 
-			r_block.data[i * block_w + j] = (uint8_t)tmp;
+			r_block.data[i * block_w + j] = tmp;
 		}
 	}
 }
