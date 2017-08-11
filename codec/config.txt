@@ -11,3 +11,4 @@ block_height=16
 block_width=16
 stream_file_name=D:\\code1.h268
 is_tree=true
+split_gamma=0.5

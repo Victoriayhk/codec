@@ -16,7 +16,7 @@ using namespace std;
 const int N=3;  //预测方法的数量
 
 
-int block_min(double *p,int N,int &pos,double &value)
+int block_min(int *p,int N,int &pos,int &value)
 {
 	
 	if(N<1)
@@ -43,21 +43,21 @@ inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVForma
 //--------------------------------------------------------------------------
 	//vector<uint8_t> data= block.data;
 	
-	double _16_16_pattern[N]; //N是模式数
-	double _8_8_pattern[4][N];
+	int _16_16_pattern[N]; //N是模式数
+	int _8_8_pattern[4][N];
 	
 	for(int i=0;i<N;++i){
 	 _16_16_pattern[i]=Pattern::predict(block,residual_block,0,0,h-1,w-1,block_buffer_pool,i,para); //需要返回一个类型
 	}
 	int pos16;
-	double min_value16;
+	int min_value16;
 	block_min(_16_16_pattern,N,pos16,min_value16);  //重载max函数计算16*16模式中的最小值
 
 	//8*8
 	int pos8;
-	double value8;
+	int value8;
 	int _8_8_type[4];
-	double min_value8=0;
+	int min_value8=0;
 	vector<pos> position;
 	position.push_back(pos(0,0,h/2-1,w/2-1));
 	position.push_back(pos(0,w/2,h/2-1,w-1));

@@ -12,8 +12,9 @@
 #include <iostream>
 #include "huffman.h"
 #include<bitset>
+extern int TABLE[1500][1500];
 
-#define WIN32
+//#define WIN32
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -1249,7 +1250,7 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 	{
 		for(int j =f_x;j<l_x + 1;++j)
 		{
-			int temp = rBlock.data[i*width + j];
+			int temp = rBlock.data[TABLE[i][width] + j];
 			if(temp>=0)
 			{
 				//bitset<1> sign(positive);
@@ -1262,7 +1263,7 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 				sign_group = sign_group<<1;
 				sign_group |= 0x01;
 				//*sign_flag++ = (uint8_t)negative;
-				temp = -rBlock.data[i*width + j];
+				temp = -rBlock.data[TABLE[i][width] + j];
 			}
 			++sign_num;
 			if(sign_num>=8)
@@ -1310,7 +1311,7 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 	{
 		for(int j = f_x;j<l_x +1;++j)
 		{
-			rBlock.data[i*width + j] = *p;
+			rBlock.data[TABLE[i][width] + j] = *p;
 
 			//int16_t sign;
 			//if(*p == positive) sign = 1;
@@ -1555,6 +1556,9 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 
 			for(int i = f_y;i<l_y + 1;++i)
 			{
+				int temp = rBlock.data[TABLE[i][width] + j];
+				uint8_t tmp2;
+				if(temp>=0)
 				for(int j =f_x;j<l_x + 1;++j)
 				{
 					int temp = rBlock.data[i*width + j];
@@ -1574,11 +1578,13 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 
 			return b_size+ sign_size;
 		}
+
+		return b_size+ sign_size;
 	}
 	else if(bit_len == 4)
 	{
 		b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
-		sign_size = (b_size + 7)*0.125;
+		sign_size = (b_size + 7)/8;
 
 		*stream =(uint8_t*)malloc(sizeof(uint8_t) *(b_size + sign_size));
 
@@ -1599,7 +1605,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 		{
 			for(int j =f_x;j<l_x + 1;++j)
 			{
-				int temp = rBlock.data[i*width + j];
+				int temp = rBlock.data[TABLE[i][width] + j];
 				if(temp>=0)
 				{
 					sign_group = sign_group<<1;
@@ -1608,7 +1614,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 				{
 					sign_group = sign_group<<1;
 					sign_group |= 0x01;
-					temp = -rBlock.data[i*width + j];
+					temp = -rBlock.data[TABLE[i][width] + j];
 				}
 				++sign_num;
 				if(sign_num>=8)
@@ -1640,6 +1646,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 
 		return b_size+ sign_size;
 	}
+	return 0;
 }
 
 int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream, int bit_len)
@@ -1658,6 +1665,7 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 			uint8_t temp;
 			int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 			int sign_size = 0;
+		int sign_size = 0;
 
 			uint8_t* p = stream;
 
@@ -1684,16 +1692,18 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 
 					++p;
 				}
-			}
+					rBlock.data[TABLE[i][width] + j] = (*p)>>1;
 
 			return b_size + sign_size;
 		}
+
+		return b_size + sign_size;
 	}
 	else if(bit_len == 4)
 	{
 		uint8_t temp;
 		int b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
-		int sign_size = (b_size + 7) *0.125;
+		int sign_size = (b_size + 7)/8;
 
 		uint8_t* sign_flag = stream;
 		uint8_t* num_flag = sign_flag + sign_size * sizeof(uint8_t);

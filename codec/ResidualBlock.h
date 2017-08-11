@@ -41,6 +41,10 @@ class Node{
 	*/
 	int convertion;
 
+	/*
+	*  帧间模式
+	*/
+	uint8_t inter_value;
 
 	friend Tree;
 
@@ -97,7 +101,7 @@ public:
 	int right_bottom_h;
 	int right_bottom_w;
 
-	double score;
+	int score;
 	/**
 	* 提供当前节点表示的区域范围
 	*/

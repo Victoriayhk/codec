@@ -1,3 +1,5 @@
+
+
 // codec.cpp : 定义控制台应用程序的入口点。
 //
 
@@ -20,13 +22,24 @@
 //#include "huffman.h"
 
 vector<int>  Square_table;
+
+int TABLE[1500][1500];
+void settable(){
+for(int i=0;i<1500;++i)
+{
+	for(int j=0;j<1500;++j)
+		TABLE[i][j]=i*j;
+}
+}
+
+
+
 #define DEBUG
 
 int main(int argc, char * argv[])
 {
-	//zag_zig_test();
+	settable();
 	//return 0;
-
 	int proc_start,proc_end;
 	int start_time,end_time;
 	proc_start=clock();
@@ -37,10 +50,10 @@ int main(int argc, char * argv[])
 		Square_table.push_back(i*i);
 
 #ifdef DEBUG
-	//para.quantizationY=20;
-	//para.quantizationU=20;
-	//para.quantizationV=20;
-	//para.frame_num=50;
+	para.quantizationY=10;
+	para.quantizationU=10;
+	para.quantizationV=10;
+	para.frame_num=20;
 	para.tree_mini_block_width=8;
 	para.tree_mini_block_height=8;
 	para.pattern_num=4;
@@ -80,8 +93,8 @@ int main(int argc, char * argv[])
 	#endif
 		if(para.is_tree)
 		errno1 = tree_encode(frame,para,pkt,frame_pool);  //encode
-		else
-		errno1 = encode(frame,para,pkt,frame_pool);  //encode
+		//else
+		//errno1 = encode(frame,para,pkt,frame_pool);  //encode
 			
 	#ifdef DEBUG
 		end_time=clock();			
@@ -144,3 +157,6 @@ int main(int argc, char * argv[])
 	return 0;
 
 }
+
+
+
