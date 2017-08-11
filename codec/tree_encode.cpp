@@ -10,7 +10,7 @@
 #include "tree_encode.h"
 #include <omp.h>
 #include "dctInterface.h"
-
+#include "cache.h"
 using namespace std;
 
 
@@ -34,6 +34,18 @@ void clear_map( map<int,Tree *> &dp){
 }
 double dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,Tree ** tree,int tph,int tpw,int brh,int brw,Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para){
 
+	uint64_t tmp = ((uint64_t)block.block_id << 32) | ((uint64_t)tph << 24)| (tpw << 16) | (brh << 8)| brw;
+	int type = (int)block.block_type;
+	*tree = cache::getTree(type,tmp);
+	if((*tree)->score < 0){
+		(*tree)->left_top_h = tph;
+		(*tree)->left_top_w = tpw;
+		(*tree)->right_bottom_h = brh;
+		(*tree)->right_bottom_w = brw;
+		double score = dp_encode_one_block(block, residual_block, **tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
+		(*tree) -> score = score;
+	}
+	/*
 	unsigned int tmp = 0 | (tph << 24) | (tpw << 16) | (brh << 8) | (brw);
 	auto& dp_ = dp[(int)block.block_type];
 
@@ -48,6 +60,7 @@ double dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_bloc
 	}
 	double score = dp_encode_one_block(block, residual_block, **tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
 	(*tree) -> score = score;
+	*/
 	return (*tree)->score;
 
 }
@@ -64,13 +77,13 @@ int encode_and_decode_with_tree(Block & block, ResidualBlock & residual_block,Tr
 		dct_trans(residual_block,tph,tpw,brh,brw,h,w);
 		quantization(tph,tpw, brh, brw , residual_block , para);
 		
-		/*
+		
 		for(int i = tph; i <=  brh; ++i){
 			for(int j = tpw; j <= brw; ++j){
 				residual_block_buffer.data[i * w + j] = residual_block.data[i * w + j];
 			}
-		}*/
-		residual_block_buffer = residual_block;
+		}
+		//residual_block_buffer = residual_block;
 		Reverse_quantization(tph,tpw, brh, brw , residual_block_buffer , para);
 		
 		reverse_dct_trans(residual_block_buffer,tph,tpw,brh,brw,h,w);
@@ -158,7 +171,7 @@ inline int tree_encode_one_block(Block & block,ResidualBlock & residual_block,Bl
 	residual_block.tree_byte=0;
 	auto& dp_ = dp[(int)block.block_type];
 	
-	clear_map(dp_);
+	//clear_map(dp_);
 	dp_encode_one_block(block, residual_block, residual_block.tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
 	//residual_block.tree_byte=0;
 	//residual_block.tree_to_stream();
@@ -192,16 +205,19 @@ int tree_encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool*>  &
 		#pragma omp section
 		{
 			cout<<omp_get_thread_num()<<endl;
+			cache::reset(0);
 			tree_encode_one_component(frame.Yblock,pkt.Ylist,block_buffer[0],residual_block_buffer[0],para,*frame_pool[0]);
 		}	
 		#pragma omp section
 		{
 			cout<<omp_get_thread_num()<<endl;
+			cache::reset(1);
 			tree_encode_one_component(frame.Ublock,pkt.Ulist,block_buffer[1],residual_block_buffer[1],para,*frame_pool[1]);
 		}
 		#pragma omp section
 		{
 			cout<<omp_get_thread_num()<<endl;
+			cache::reset(2);
 			tree_encode_one_component(frame.Vblock,pkt.Vlist,block_buffer[2],residual_block_buffer[2],para,*frame_pool[2]);
 		}
 	}

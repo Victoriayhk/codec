@@ -103,7 +103,7 @@ public:
 	*/
 	
 
-
+	Tree();
 	Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w);
 
 

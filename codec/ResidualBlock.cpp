@@ -95,9 +95,14 @@ int Node::from_stream(unsigned char * stream){
 
 }
 
+Tree::Tree():node_id(-1),
+				split_direction(NONE),left(nullptr),right(nullptr),
+				left_top_h(0),left_top_w(0),right_bottom_h(0),right_bottom_w(0),score(-1)
+{
+};
 Tree::Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w):node_id(-1),
 				split_direction(NONE),left(nullptr),right(nullptr),
-				left_top_h(left_top_h),left_top_w(left_top_w),right_bottom_h(right_bottom_h),right_bottom_w(right_bottom_w){
+				left_top_h(left_top_h),left_top_w(left_top_w),right_bottom_h(right_bottom_h),right_bottom_w(right_bottom_w),score(-1){
 }
 void Tree::serialize(unsigned char * stream,int &byte,int &bit,int * used_node_ids,int &idx){
 	unsigned char * tmp = stream + byte;

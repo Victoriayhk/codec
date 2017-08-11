@@ -33,12 +33,12 @@ int main(int argc, char * argv[])
 		Square_table.push_back(i*i);
 
 #ifdef DEBUG
-	//para.quantizationY=40;
-	// para.quantizationU=40;
-	//para.quantizationV=40;
-	para.frame_num=30;
-	//para.tree_mini_block_width=17;
-	//para.tree_mini_block_height=17;
+	para.quantizationY=40;
+	 para.quantizationU=50;
+	para.quantizationV=50;
+	para.frame_num=200;
+	para.tree_mini_block_width=16;
+	para.tree_mini_block_height=16;
 #endif
 	Frame frame;
 	Frame frame1;
