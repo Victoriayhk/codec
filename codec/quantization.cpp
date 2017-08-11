@@ -5,6 +5,8 @@
 
 using namespace std;
 
+
+extern int TABLE[1500][1500];
 double round(double val)
 {
     return (val> 0.0) ? floor(val+ 0.5) : ceil(val- 0.5);
@@ -48,10 +50,10 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 			//double tmp;
 			if(i % 4 == 0 && j % 4 == 0)
 			{
-				tmp = round((double)block.data[i*width +j]/AC_quantization);
+				tmp = round((double)block.data[TABLE[i][width] +j]/AC_quantization);
 			}
 
-			tmp = round((double)block.data[i*width +j]/quantization_num);
+			tmp = round((double)block.data[TABLE[i][width] +j]/quantization_num);
 			block.data[i*width +j] = (int16_t)tmp;
 		}
 	}
@@ -93,7 +95,7 @@ int Reverse_quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& blo
 	{
 		for(int j = f_y; j <= l_y ; ++j)
 		{
-			block.data[i*width+ j] *= quantization_num;
+			block.data[TABLE[i][width] + j] *= quantization_num;
 		}
 	}
 	return 0;

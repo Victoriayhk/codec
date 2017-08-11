@@ -63,12 +63,14 @@ int Node::to_stream(unsigned char * stream){
 	}else{
 		*(stream) |= (unsigned char)0x80;
 
-		memcpy(stream+1,mv,2);
+		memcpy(stream + 1,&inter_value,1);
+		++byte;
+		//memcpy(stream+1,mv,2);
 		//*(stream +1 ) = mv[0];
 		
 		//*(stream + 2) = mv[1];
 
-		byte += 2;
+		//byte += 2;
 
 	}
 
@@ -85,8 +87,10 @@ int Node::from_stream(unsigned char * stream){
 	}else{
 		pre_type = INTER_PREDICTION;
 
-		memcpy(mv,stream+1,2);
-		need_byte += 2;
+		memcpy(&inter_value,stream + 1,1);
+		++need_byte;
+		//memcpy(mv,stream+1,2);
+		//need_byte += 2;
 		//mv[0] = *(stream + need_byte);
 		//++need_byte;
 		//mv[1] = *(stream + need_byte);
@@ -708,9 +712,8 @@ int PKT::stream_write(AVFormat& para)
 }
 
 int PKT::stream_read_one_component(AVFormat& para,std::vector<ResidualBlock> & list,Block::BlockType type){
-	
+	cache::reset(type);
 	uint8_t *tmp_head_t = nullptr;
-
 	unsigned int out_len;
 	int head_len;
 	//unsigned int len = 1;

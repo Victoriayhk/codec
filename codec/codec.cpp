@@ -20,10 +20,24 @@
 //#include "huffman.h"
 
 vector<int>  Square_table;
+
+int TABLE[1500][1500];
+void settable(){
+for(int i=0;i<1500;++i)
+{
+	for(int j=0;j<1500;++j)
+		TABLE[i][j]=i*j;
+}
+}
+
+
+
 #define DEBUG
 
 int main(int argc, char * argv[])
 {
+	settable();
+	//return 0;
 	int proc_start,proc_end;
 	int start_time,end_time;
 	proc_start=clock();
@@ -38,8 +52,8 @@ int main(int argc, char * argv[])
 	para.quantizationU=20;
 	para.quantizationV=20;
 	para.frame_num=20;
-	para.tree_mini_block_width=17;
-	para.tree_mini_block_height=17;
+	para.tree_mini_block_width=8;
+	para.tree_mini_block_height=8;
 	para.pattern_num=4;
 #endif
 	Frame frame;

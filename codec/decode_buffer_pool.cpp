@@ -1,5 +1,5 @@
 
-
+extern int TABLE[1500][1500];
 #include "decode_buffer_pool.h"
 
 //int FrameBufferPool::add_frame_to_pool(BlockBufferPool * frame)
@@ -15,7 +15,7 @@
 //}
 
 void BlockBufferPool::setValue(int h,int w,uint8_t value){
-	frame[h * width + w] = value;
+	frame[TABLE[h][width] + w] = value;
 }
 int BlockBufferPool::get_height(){
 	return height;
@@ -29,7 +29,7 @@ BlockBufferPool::BlockBufferPool(const BlockBufferPool & pool){
 	width = pool.width;
 }
 uint8_t BlockBufferPool::getValue(int h,int w){
-	return frame[h * width + w];
+	return frame[TABLE[h][width] + w];
 }
 
 //void BlockBufferPool::set_block(Block & block,int tlh, int tlw, int brh, int brw,AVFormat &para){

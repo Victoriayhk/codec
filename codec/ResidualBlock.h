@@ -41,6 +41,10 @@ class Node{
 	*/
 	int convertion;
 
+	/*
+	*  Ö¡¼äÄ£Ê½
+	*/
+	uint8_t inter_value;
 
 	friend Tree;
 

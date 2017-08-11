@@ -11,6 +11,54 @@ struct InterMV {
 };
 
 
+/* 用一个Byte保存MV信息
+* 前2位: fi, 参考帧相对位置(0, 1, 2, 3)
+* 接下来3位: mv1, [-4, 4)
+* 最后3位: mv2, [-4, 4]
+*/
+struct InterMVConverter {
+	unsigned char value;
+	int get_fi() { return (short)((value >> 6) & 3); }
+	int get_mv1() {
+		int ret = ((value >> 3) & 7);
+		if (ret & 4) return -(~ret&3)-1;
+		else return ret;
+	}
+	int get_mv2() {
+		short ret = value & 7;
+		if (ret & 4) return -(~ret&3)-1;
+		else return ret;
+	}
+
+	int set_value(int fi, int mv1, int mv2) {
+		value = 0;
+		value |= ((fi) & 3) << 6;
+		
+		if (mv1 < 0) {
+			value |= 32;
+			value |= (~(-mv1-1) & 3) << 3;
+		} else {
+			value |= (mv1 & 3) << 3;
+		}
+
+		if (mv2 < 0) {
+			value |= 4;
+			value |= (~(-mv2-1) & 3);
+		} else {
+			value |= (mv2 & 3);
+		}
+		return 0;
+	}
+    string to_string() {
+        string str;
+        for (int i = 7; i >= 0; i--) {
+            if (value & (1 << i)) str += '1';
+            else str += '0';
+        }
+        return str;
+    }
+};
+
 
 class Pattern
 {

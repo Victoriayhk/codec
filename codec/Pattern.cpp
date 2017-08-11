@@ -9,6 +9,7 @@
 //}
 
 extern vector<int>  Square_table;
+extern int TABLE[1500][1500];
 #define IN_AREA(i, j, h, w) (0 <= i && i < h && 0 <= j && j <= w) 
 
 /*
@@ -23,7 +24,7 @@ int Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int start_
 	int diff = 0;		
 	for (int i = start_r; i <= end_r && i + i_offset < para.height; i++)
 	{
-		int pos=i*block_w;
+		int pos=TABLE[i][block_w];
 		for (int j = start_c; j <= end_c && j + j_offset < para.width; j++) 
 		{
 			int16_t block_pool=128;
@@ -92,7 +93,7 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 
 	for (int i = start_r; i <= end_r && i + i_offset < para.height; i++)
 	{
-		int pos=i*block_w;
+		int pos=TABLE[i][block_w];
 		for (int j = start_c; j <= end_c && j + j_offset < para.width; j++) 
 		{
 			int16_t block_pool=128;
@@ -166,10 +167,7 @@ const int MAX_INTER_SEARCH_RANGE = 4;
 */
 int16_t get_value_or_128(BlockBufferPool &sort_of_array, int i, int j) {
 	if (i < 0 || i >= sort_of_array.get_height() || j < 0 || j >= sort_of_array.get_width()) return 128;
-
-	int16_t result = 0x00ff;
-	result &= sort_of_array.getValue(i, j);
-	return result;
+	else return sort_of_array.getValue(i, j);
 }
 
 
@@ -209,17 +207,9 @@ int Pattern::calc_SAD_inter(const Block &block, int start_r, int start_c, int en
 			int c_i = i_offset + i + r_i;			// 参考块的行坐标
 			int c_j = j_offset + j + r_j;			// 参考块的纵坐标
 
+			int tmp = (int16_t)block.data[TABLE[i][block_w] + j] - get_value_or_128(b_pool, c_i, c_j);
 
-			int16_t get_value = get_value_or_128(b_pool, c_i, c_j);
-			int tmp = (int16_t)block.data[i * block_w + j] - get_value;
-
-			int x = (int16_t)block.data[i * block_w + j];
-			if(x<0)
-			{
-				int a=0;
-			}
-
-			diff += tmp * tmp;
+			diff +=TABLE[abs(tmp)][abs(tmp)];
 		}
 	}
 	return diff;
@@ -244,17 +234,8 @@ void Pattern::predict_inter_sub(const Block &block,ResidualBlock &r_block, int s
 			int c_i = i_offset + i + r_i;			// 参考块的行坐标
 			int c_j = j_offset + j + r_j;			// 参考块的纵坐标
 
-			int16_t get_value = get_value_or_128(b_pool, c_i, c_j);
-
-			int x = (int16_t)block.data[i * block_w + j];
-			if(x<0)
-			{
-				int a=0;
-			}
-
-			int tmp = (int16_t)block.data[i * block_w + j] - get_value;
-
-			r_block.data[i * block_w + j] = (uint8_t)tmp;
+			int tmp = (int16_t)block.data[TABLE[i][block_w]+ j] - get_value_or_128(b_pool, c_i, c_j);
+			r_block.data[TABLE[i][block_w] + j] = tmp;
 		}
 	}
 }
@@ -279,10 +260,9 @@ void Pattern::predict_inter_add(Block &block, const ResidualBlock &r_block, int 
 			int c_i = i_offset + i + r_i;			// 参考块的行坐标
 			int c_j = j_offset + j + r_j;			// 参考块的纵坐标
 
-			int16_t get_value = get_value_or_128(ref_pool, c_i, c_j);
-			int tmp = (int16_t)r_block.data[i * block_w + j] + get_value;
+			int tmp = (int16_t)r_block.data[TABLE[i][block_w] + j] + get_value_or_128(ref_pool, c_i, c_j);
 
-			block.data[i * block_w + j] = tmp;
+			block.data[TABLE[i][block_w] + j] = tmp;
 			cur_pool.setValue(i+i_offset, j+j_offset, tmp);
 		}
 	}

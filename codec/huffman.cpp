@@ -12,6 +12,7 @@
 #include <iostream>
 #include "huffman.h"
 #include<bitset>
+extern int TABLE[1500][1500];
 
 //#define WIN32
 
@@ -1242,7 +1243,7 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 	{
 		for(int j =f_x;j<l_x + 1;++j)
 		{
-			int temp = rBlock.data[i*width + j];
+			int temp = rBlock.data[TABLE[i][width] + j];
 			if(temp>=0)
 			{
 				//bitset<1> sign(positive);
@@ -1255,7 +1256,7 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 				sign_group = sign_group<<1;
 				sign_group |= 0x01;
 				//*sign_flag++ = (uint8_t)negative;
-				temp = -rBlock.data[i*width + j];
+				temp = -rBlock.data[TABLE[i][width] + j];
 			}
 			++sign_num;
 			if(sign_num>=8)
@@ -1323,7 +1324,7 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 	{
 		for(int j = f_x;j<l_x +1;++j)
 		{
-			rBlock.data[i*width + j] = *p;
+			rBlock.data[TABLE[i][width] + j] = *p;
 
 			//int16_t sign;
 			//if(*p == positive) sign = 1;
@@ -1619,7 +1620,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 		{
 			for(int j =f_x;j<l_x + 1;++j)
 			{
-				int temp = rBlock.data[i*width + j];
+				int temp = rBlock.data[TABLE[i][width] + j];
 				uint8_t tmp2;
 				if(temp>=0)
 				{
@@ -1658,7 +1659,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 		{
 			for(int j =f_x;j<l_x + 1;++j)
 			{
-				int temp = rBlock.data[i*width + j];
+				int temp = rBlock.data[TABLE[i][width] + j];
 				if(temp>=0)
 				{
 					sign_group = sign_group<<1;
@@ -1667,7 +1668,7 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 				{
 					sign_group = sign_group<<1;
 					sign_group |= 0x01;
-					temp = -rBlock.data[i*width + j];
+					temp = -rBlock.data[TABLE[i][width] + j];
 				}
 				++sign_num;
 				if(sign_num>=8)
@@ -1732,11 +1733,11 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 			{
 				if( *p%2 == 1)
 				{
-					rBlock.data[i*width + j] = -((*p + 1)>>1);
+					rBlock.data[TABLE[i][width] + j] = -((*p + 1)>>1);
 				}
 				else
 				{
-					rBlock.data[i*width + j] = (*p)>>1;
+					rBlock.data[TABLE[i][width] + j] = (*p)>>1;
 				}
 
 				++p;

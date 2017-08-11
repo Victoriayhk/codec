@@ -9,6 +9,7 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 
+extern int TABLE[1500][1500];
 namespace dct {
 	//Cfæÿ’Û  
 	const int Cf[4][4]=  
@@ -75,7 +76,7 @@ void  DCT4x4Solver::matrix_multiply(const int a[][4], const int b[][4], int c[][
         for(int j = 0; j < 4; j++) {
             c[i][j] = 0;  
             for(int k = 0; k < 4; k++) {  
-                c[i][j] += a[i][k] * b[k][j];    
+                c[i][j] += a[i][k] * b[k][j];  
             }  
         }
     }        
@@ -86,7 +87,7 @@ void DCT4x4Solver::dct_2d(int16_t *data, int start_idx, int w) {
 		int x[4][4], y[4][4];
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
-			x[i][j] = data[start_idx + i * w + j];
+			x[i][j] = data[start_idx +TABLE[i][w] + j];
 		}
 	}
     matrix_multiply(dct::Cf, x, y);
@@ -94,7 +95,7 @@ void DCT4x4Solver::dct_2d(int16_t *data, int start_idx, int w) {
     quantize(x, y);
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
-			data[start_idx + i * w + j] = (int16_t)y[i][j];
+			data[start_idx +TABLE[i][w] + j] = (int16_t)y[i][j];
 		}
 	}
 }
@@ -107,7 +108,7 @@ void DCT4x4Solver::reverse_dct_2d(int16_t *data, int start_idx, int w) {
     matrix_multiply(x, dct::Ci_t, y);
     for(int i = 0;i < 4; i++) {
         for(int j = 0; j < 4; j++) {
-			data[start_idx + i * w + j] = int( y[i][j] / 256.0 + 0.5 );
+			data[start_idx + TABLE[i][w]+ j] = int( y[i][j] / 256.0 + 0.5 );
 		}
 	}
 }
@@ -132,8 +133,8 @@ void DCT4x4Solver::quantize(int16_t *data, int start_idx, int w, int y[][4]) {
 			} else {
 				k = 2;
 			}
-            y[i][j] = ( abs(data[start_idx + i * w + j]) * dct::MF[QP % 6][k] + f ) >> qbits;  
-            if(data[start_idx + w + i * w + j] < 0) {
+            y[i][j] = ( abs(data[start_idx + TABLE[i][w] + j]) * dct::MF[QP % 6][k] + f ) >> qbits;  
+            if(data[start_idx + w + TABLE[i][w] + j] < 0) {
                 y[i][j] = -y[i][j];
 			}
         }
@@ -153,7 +154,7 @@ void DCT4x4Solver::reverse_quantize(int16_t *data, int start_idx, int w, int y[]
 			} else {
 				k = 2;
 			}
-            y[i][j] = data[start_idx + i * w + j] * dct::V[QP % 6 ][k] * f;  
+            y[i][j] = data[start_idx + TABLE[i][w] + j] * dct::V[QP % 6 ][k] * f;  
         }
     }
 }
@@ -212,7 +213,7 @@ int  DCT4x4Solver::dct(int16_t *data, int h, int w) {
 	
 	for (int i= 0; i < h; i += 4) {
         for (int j = 0; j < w; j += 4) {
-            dct_2d(data, i * w + j, w);
+            dct_2d(data,TABLE[i][w] + j, w);
         }
     }
 
@@ -232,7 +233,7 @@ int  DCT4x4Solver::reverse_dct(int16_t *data, int h, int w) {
 
 	for (int i= 0; i < h; i += 4) {
         for (int j = 0; j < w; j += 4) {
-            reverse_dct_2d(data, i * w + j, w);
+            reverse_dct_2d(data, TABLE[i][w] + j, w);
         }
     }
 
@@ -252,7 +253,7 @@ int  DCT4x4Solver::dct(int16_t *data, int left_row,int left_col,int right_row,in
 	
 	for (int i = left_row; i <= right_row; i += 4) {
         for (int j = left_col; j <= right_col; j += 4) {
-            dct_2d(data, i * w + j, w);
+            dct_2d(data, TABLE[i][w]+ j, w);
         }
     }
 
@@ -272,7 +273,7 @@ int  DCT4x4Solver::reverse_dct(int16_t *data, int left_row,int left_col,int righ
 	
 	for (int i = left_row; i <= right_row; i += 4) {
         for (int j = left_col; j <= right_col; j += 4) {
-            reverse_dct_2d(data, i * w + j, w);
+            reverse_dct_2d(data, TABLE[i][w] + j, w);
         }
     }
 

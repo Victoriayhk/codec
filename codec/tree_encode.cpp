@@ -13,7 +13,7 @@
 #include "cache.h"
 using namespace std;
 
-
+extern int TABLE[1500][1500];
 
 static map<int,Tree *> dp[3];
 inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para);
@@ -80,7 +80,7 @@ int encode_and_decode_with_tree(Block & block, ResidualBlock & residual_block,Tr
 		
 		for(int i = tph; i <=  brh; ++i){
 			for(int j = tpw; j <= brw; ++j){
-				residual_block_buffer.data[i * w + j] = residual_block.data[i * w + j];
+				residual_block_buffer.data[TABLE[i][w]+ j] = residual_block.data[TABLE[i][w]+ j];
 			}
 		}
 		//residual_block_buffer = residual_block;
