@@ -115,6 +115,8 @@ public:
 	double quantizationU;
 	double quantizationV;
 
+
+	double split_gamma;
 	bool is_tree;
 	/**
 	*  熵编码一次作用的宏块数目

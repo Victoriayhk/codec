@@ -300,6 +300,7 @@ int Pattern::inter_predict(Block& block, ResidualBlock &r_block, int start_r, in
 		hash.clear();
 		hash[mv] = cur_diff;
 
+		
 		int search_count=0;
 		int step_length = 2;
 		while (step_length > 0) {
@@ -331,7 +332,7 @@ int Pattern::inter_predict(Block& block, ResidualBlock &r_block, int start_r, in
 			
 			++search_count;
 		}
-
+		
 		if (cur_diff < diff) {
 			diff = cur_diff;
 			best_mv = mv;

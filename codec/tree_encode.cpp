@@ -16,7 +16,7 @@ using namespace std;
 extern int TABLE[1500][1500];
 
 static map<int,Tree *> dp[3];
-inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para);
+inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para,int thread_hold);
 
 
 void clear_map( map<int,Tree *> &dp){
@@ -32,7 +32,7 @@ void clear_map( map<int,Tree *> &dp){
 	}
 	*/
 }
-int dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,Tree ** tree,int tph,int tpw,int brh,int brw,Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para){
+int dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,Tree ** tree,int tph,int tpw,int brh,int brw,Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para,int thread_hold){
 
 	uint64_t tmp = ((uint64_t)block.block_id << 32) | ((uint64_t)tph << 24)| (tpw << 16) | (brh << 8)| brw;
 	int type = (int)block.block_type;
@@ -42,7 +42,7 @@ int dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,T
 		(*tree)->left_top_w = tpw;
 		(*tree)->right_bottom_h = brh;
 		(*tree)->right_bottom_w = brw;
-		int score = dp_encode_one_block(block, residual_block, **tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
+		int score = dp_encode_one_block(block, residual_block, **tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para,thread_hold);
 		(*tree) -> score = score;
 	}
 	/*
@@ -99,7 +99,7 @@ int encode_and_decode_with_tree(Block & block, ResidualBlock & residual_block,Tr
 	}
 	return 0;
 }
-inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para) {
+inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para,int thread_hold) {
 	
 
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
@@ -119,17 +119,20 @@ inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tre
 	score0 = search_predict_pattern(block,residual_block,tree,block_buffer_pool,frame_pool,block_buffer,para);
 
 
+
 	Tree * left, * right;
 	Tree * left2, * right2;
-	if (w >= para.tree_mini_block_width ) {
-		score1 = dp_encode_one_block_get_tree(block,residual_block,&left,tph,tpw,brh,brw - (w/2), block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para);
-		score1 += dp_encode_one_block_get_tree(block,residual_block,&right,tph,tpw+(w/2),brh,brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para);
+
+	if (score0 < thread_hold && w >= para.tree_mini_block_width ) {
+		score1 = dp_encode_one_block_get_tree(block,residual_block,&left,tph,tpw,brh,brw - (w/2), block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para,score0 * para.split_gamma);
+		score1 += dp_encode_one_block_get_tree(block,residual_block,&right,tph,tpw+(w/2),brh,brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para,score0 * para.split_gamma);
 	}
 
-	if (h >= para.tree_mini_block_height) {
-		score2 = dp_encode_one_block_get_tree(block,residual_block,&left2,tph,tpw,brh - (h/2),brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para);
-		score2 += dp_encode_one_block_get_tree(block,residual_block,&right2,tph + (h/2),tpw,brh,brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para);
+	if (score0 < thread_hold && h >= para.tree_mini_block_height) {
+		score2 = dp_encode_one_block_get_tree(block,residual_block,&left2,tph,tpw,brh - (h/2),brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para,score0 * para.split_gamma);
+		score2 += dp_encode_one_block_get_tree(block,residual_block,&right2,tph + (h/2),tpw,brh,brw, block_buffer,residual_block_buffer,block_buffer_pool,frame_pool,para,score0 * para.split_gamma);
 	}
+
 	if(score0 <= score1 && score0 <= score2){
 		tree.left = nullptr;
 		tree.right = nullptr;
@@ -172,7 +175,7 @@ inline int tree_encode_one_block(Block & block,ResidualBlock & residual_block,Bl
 	auto& dp_ = dp[(int)block.block_type];
 	
 	//clear_map(dp_);
-	dp_encode_one_block(block, residual_block, residual_block.tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para);
+	dp_encode_one_block(block, residual_block, residual_block.tree, block_buffer,residual_block_buffer, block_buffer_pool, frame_pool,para,INT_MAX);
 	//residual_block.tree_byte=0;
 	//residual_block.tree_to_stream();
 	

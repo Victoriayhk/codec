@@ -34,6 +34,8 @@ AVFormat::AVFormat():
 	quantizationU = 5;
 	quantizationV = 5;
 
+	split_gamma = 0.5;
+
 	is_tree = true;
 
 }
@@ -75,6 +77,8 @@ void AVFormat::setValue(const string & key, const string & value){
 		fps = std::stoi(value);
 	}else if(key.compare("frame_num") == 0){
 		frame_num = std::stoi(value);
+	}else if(key.compare("split_gamma") == 0){
+		split_gamma = std::stod(value);
 	}else if(key.compare("is_tree") == 0){
 		if(value.compare("true") == 0){
 			is_tree = true;

@@ -440,8 +440,9 @@ int ResidualBlock::data_from_stream(unsigned char *stream, int block_size, AVFor
 int ResidualBlock::clear()
 {
 	//data.clear();
-	node.clear();
+	//node.clear();
 	//tree.clear();
+	memset(data.data(),0,data.size() * sizeof(data[0]));
 	return 0;
 }
 
