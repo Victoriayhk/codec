@@ -48,10 +48,10 @@ int main(int argc, char * argv[])
 		Square_table.push_back(i*i);
 
 #ifdef DEBUG
-	para.quantizationY=15;
-	para.quantizationU=30;
-	para.quantizationV=30;
-	para.frame_num=50;
+	para.quantizationY=10;
+	para.quantizationU=10;
+	para.quantizationV=10;
+	para.frame_num=20;
 	para.tree_mini_block_width=8;
 	para.tree_mini_block_height=8;
 	para.pattern_num=4;
@@ -91,8 +91,8 @@ int main(int argc, char * argv[])
 	#endif
 		if(para.is_tree)
 		errno1 = tree_encode(frame,para,pkt,frame_pool);  //encode
-		else
-		errno1 = encode(frame,para,pkt,frame_pool);  //encode
+		//else
+		//errno1 = encode(frame,para,pkt,frame_pool);  //encode
 			
 	#ifdef DEBUG
 		end_time=clock();			
@@ -118,13 +118,7 @@ int main(int argc, char * argv[])
 		para.stream_writer = nullptr;
 
 
-	for (int i = 0; i < 3; i++){
-	/*	for(int j = 0; j < frame_pool[i]->capicity(); ++j){
-			(*frame_pool[i])[j].clear();
-		}*/
-		frame_pool[i]->clear();
-		
-	}
+	for (int i = 0; i < 3; i++) frame_pool[i]->clear();
 
 
 	for(int i = 0; i < para.frame_num; ++i){
