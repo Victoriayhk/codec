@@ -1,6 +1,6 @@
 
-//#define ENCODE
-#define DECODE
+#define ENCODE
+//#define DECODE
 
 #ifdef ENCODE
 // codec.cpp : 定义控制台应用程序的入口点。
@@ -65,7 +65,7 @@ int main(int argc, char * argv[])
 
 	int errno1;
 	for(int i = 0; i < para.frame_num; ++i){
-		
+//		cout<<i<<endl;
 		yuv_read(para,frame);	
 		errno1 = tree_encode(frame,para,pkt,frame_pool);  //encode
 		pkt.stream_write(para);                    //pkt_write
@@ -80,7 +80,7 @@ int main(int argc, char * argv[])
 
 	proc_end=clock();
 
-	std::cout<< "process running time is: "<<static_cast<double>(proc_end-proc_start)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;
+	std::cout<< "encode running time is: "<<static_cast<double>(proc_end-proc_start)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;
 
 	return 0;
 
@@ -167,7 +167,7 @@ int main(int argc, char * argv[])
 		delete frame_pool[i];
 
 	proc_end=clock();
-	std::cout<< "process running time is: "<<static_cast<double>(proc_end-proc_start)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;
+	std::cout<< "decode running time is: "<<static_cast<double>(proc_end-proc_start)/CLOCKS_PER_SEC*1000<<"ms"<<std::endl;
 
 	return 0;
 

@@ -54,7 +54,7 @@ int quantization(int f_x, int f_y, int l_x ,int l_y , ResidualBlock& block, AVFo
 			}
 
 			tmp = round((double)block.data[TABLE[i][width] +j]/quantization_num);
-			block.data[i*width +j] = (int16_t)tmp;
+			block.data[TABLE[i][width] +j] = (int16_t)tmp;
 		}
 	}
 	return 0;
