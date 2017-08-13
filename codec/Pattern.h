@@ -4,7 +4,10 @@
 #include "ResidualBlock.h"
 #include "decode_buffer_pool.h"
 
-
+/* 没有压缩的MV和参考帧编号
+*
+* 易惠康
+*/
 struct InterMV {
 	int fi;				// 帧的相对ID
 	pair<int, int> mv;	// mv
@@ -15,6 +18,8 @@ struct InterMV {
 * 前2位: fi, 参考帧相对位置(0, 1, 2, 3)
 * 接下来3位: mv1, [-4, 4)
 * 最后3位: mv2, [-4, 4]
+*
+* 易惠康
 */
 struct InterMVConverter {
 	unsigned char value;

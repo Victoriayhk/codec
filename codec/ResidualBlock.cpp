@@ -264,6 +264,9 @@ int Tree::from_stream(unsigned char * stream,Node * node_list,int &num,int block
 }
 
 
+/* 基础类型写入流
+* 易惠康
+*/
 template<typename T>
 inline int save_to_buffer(const T &val, unsigned char *buffer) {
 	memcpy(buffer, &val, sizeof(val));

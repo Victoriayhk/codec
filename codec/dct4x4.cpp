@@ -6,6 +6,10 @@
 
 // http://blog.csdn.net/stpeace/article/details/8119041
 
+/* 4x4¾ØÕóDCT±ä»»
+* Ò×»İ¿µ
+*/
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 
@@ -279,10 +283,6 @@ int  DCT4x4Solver::reverse_dct(int16_t *data, int left_row,int left_col,int righ
 
 	return 0;
 }
-
-
-
-
 
 
 #endif

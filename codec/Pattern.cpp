@@ -268,10 +268,10 @@ void Pattern::predict_inter_add(Block &block, const ResidualBlock &r_block, int 
 			int c_i = i_offset + i + r_i;			// 参考块的行坐标
 			int c_j = j_offset + j + r_j;			// 参考块的纵坐标
 
-			int16_t tmp=(int16_t)r_block.data[TABLE[i][block_w] + j] + get_value_or_128(ref_pool, c_i, c_j);
-			if(tmp<0)
-				tmp=0;
-			else if(tmp>255)
+			int16_t tmp = (int16_t)r_block.data[TABLE[i][block_w] + j] + get_value_or_128(ref_pool, c_i, c_j);
+			if(tmp < 0)
+				tmp = 0;
+			else if (tmp > 255)
 				tmp=255;
 			else
 			{}
@@ -282,6 +282,7 @@ void Pattern::predict_inter_add(Block &block, const ResidualBlock &r_block, int 
 }
 
 /* 帧间预测搜索算最佳SAD
+* 使用菱形搜索/折半步长法,
 */
 int Pattern::inter_predict(Block& block, ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c,
 	FrameBufferPool &f_pool, InterMV &inter_mv, AVFormat &para, int diff_thresshold,int i_offset,int j_offset) {
@@ -324,6 +325,8 @@ int Pattern::inter_predict(Block& block, ResidualBlock &r_block, int start_r, in
 				nmv.second = mv.second + (search_dir[d_p][1] * step_length);
 				if (nmv.first < -MAX_INTER_SEARCH_RANGE || nmv.first >= MAX_INTER_SEARCH_RANGE) continue;
 				if (nmv.second < -MAX_INTER_SEARCH_RANGE || nmv.second >= MAX_INTER_SEARCH_RANGE) continue;
+				
+				//计算SAD值
 				int new_diff;
 				if (hash.find(nmv) != hash.end()) {
 					new_diff = hash[nmv];
@@ -331,22 +334,24 @@ int Pattern::inter_predict(Block& block, ResidualBlock &r_block, int start_r, in
 					new_diff = calc_SAD_inter(block, start_r, start_c, end_r, end_c, nmv.first, nmv.second, block_w, i_offset, j_offset, f_pool[fi]);
 					hash[nmv] = new_diff;
 				}
+
+				// 更菱形四角上的最好SAD
 				if (new_diff < best_new_diff) {
 					best_new_diff = new_diff;
 					best_d_p = d_p;
 				}
 			}
+
+			// 更新当前帧最好的SAD
 			if (best_new_diff < cur_diff) {
 				mv.first += (search_dir[best_d_p][0] * step_length);
 				mv.second += (search_dir[best_d_p][1] * step_length);
 				cur_diff = best_new_diff;
-			} else {
+			} else { // 更新不到, 则缩减步长
 				step_length >>= 1;
 			};
-			
-	//		++search_count;
 		}
-		
+
 		if (cur_diff < diff) {
 			diff = cur_diff;
 			best_mv = mv;
@@ -356,6 +361,7 @@ int Pattern::inter_predict(Block& block, ResidualBlock &r_block, int start_r, in
 		}
 	}
 
+	// 范围内最好SAD, mv, 参考帧位置(帧进入frame_pool中的方式在解码加密中一致, 记录绝对帧在池中相对当前帧的位置)
 	inter_mv.fi = f_pool.size() - 2 - best_fi;
 	inter_mv.mv = best_mv;
 
@@ -364,19 +370,10 @@ int Pattern::inter_predict(Block& block, ResidualBlock &r_block, int start_r, in
 
 
 void Pattern::inter_predict_setvalue(Block& block, ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c, FrameBufferPool &f_pool, InterMV &inter_mv, AVFormat &para,int i_offset,int j_offset) {
-	int search_dir[4][2] = {
-		-1, 0,
-		0, -1,
-		0, 1,
-		1, 0,
-	};
 	int frame_width = para.width;
 	int frame_height = para.height;
 	int block_w, block_h;
 	r_block.getBlockSize(para, block_w, block_h);
-	//int i_offset = TABLE[r_block.block_id / para.block_num_per_row][block_h];// 当前block的起始像素所在Frame的行
-	//int j_offset = TABLE[(r_block.block_id % para.block_num_per_row)][block_w];// 当前block的起始像素所在Frame的列
-
 	
 	int fi = f_pool.size() - 2 - inter_mv.fi;
 	predict_inter_sub(block,r_block,start_r, start_c, end_r, end_c, inter_mv.mv.first, inter_mv.mv.second, block_w, i_offset, j_offset, f_pool[fi]);
@@ -384,12 +381,6 @@ void Pattern::inter_predict_setvalue(Block& block, ResidualBlock &r_block, int s
 
 
 void Pattern::inter_predict_reverse(Block& block, ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c, FrameBufferPool &f_pool,BlockBufferPool & block_buffer_pool, InterMV &inter_mv, AVFormat &para) {
-	int search_dir[4][2] = {
-		-1, 0,
-		0, -1,
-		0, 1,
-		1, 0,
-	};
 	int frame_width = para.width;
 	int frame_height = para.height;
 	int block_w, block_h;

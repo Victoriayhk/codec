@@ -7,7 +7,7 @@ using namespace std;
 extern int TABLE[1500][1500];
 
 /*
-* 从AVFormat para中指定的文件的当前位置读入一帧数据
+* 从AVFormat para中指定的文件(.video)的当前位置读入一帧数据
 Args: 
 	para: 统一参数配置类
 	frame: 目标帧
@@ -57,6 +57,14 @@ int yuv_read(AVFormat & para, Frame &frame) {
 	return 0;
 }
 
+/*
+* 写入一帧数据到从AVFormat para中指定的文件.out_video
+Args: 
+	para: 统一参数配置类
+	frame: 目标帧
+Returns:
+	读取成功与否的状态, -1表示失败
+*/
 int yuv_write(AVFormat & para, Frame &frame) {
 	FILE * fout = para.out_video;
 	static int frame_cnt = 0;
