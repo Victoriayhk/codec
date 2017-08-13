@@ -118,7 +118,10 @@ public:
 };
 
 
-
+/**
+*   ²Ð²î¿é
+*
+*/
 class ResidualBlock
 {
 	/**

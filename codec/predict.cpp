@@ -10,6 +10,10 @@
 extern int TABLE[1500][1500];
 int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,int & min_score,int i_offset,int j_offset)
 {
+	/**
+	*   根据分块树来预测，返回残差矩阵
+	*   李春尧
+	*/
 	InterMV tmp_inter_mv;
 	InterMVConverter convter;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
@@ -36,7 +40,10 @@ int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPo
 
 int intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,Block & buffer_block,AVFormat & para,int & min_score,int i_offset,int j_offset){
 	
-
+	/**
+	*   帧内搜索，记录最好的模式（具体帧间预测算法在pattern）
+	*   李春尧
+	*/
 	int best_pattern = 0;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	int score = min_score;
@@ -56,6 +63,11 @@ int intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBu
 }
 
 int inter_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,int & min_score,int i_offset,int j_offset){
+	/**
+	*   帧间搜索，记录最好的模式（具体帧间预测算法在pattern）
+	*   李春尧
+	*/
+	
 	int score = min_score;
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	InterMV tmp_inter_mv;
@@ -76,8 +88,12 @@ int inter_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,FrameBu
 }
 
 int search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,Block & buffer_block,AVFormat & para,int i_offset,int j_offset){
+	/**
+	*   搜索并记录最好的模式（具体帧间预测算法在pattern）
+	*   李春尧
+	*/
 	int score = INT_MAX;
-		intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score,i_offset,j_offset);
+	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score,i_offset,j_offset);
 	if(frame_pool.size() > 1)
 		inter_predict(block,residual_block,tree,frame_pool,buffer_block,para,score,i_offset,j_offset);
 	//else
@@ -86,6 +102,11 @@ int search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &tre
 }
 
 int reverse_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,FrameBufferPool &frame_pool,AVFormat & para){
+
+	/**
+	*   根据残差预测解码，并设置缓冲池和形成新的block
+	*   李春尧
+	*/
 	int tph = tree.left_top_h,tpw = tree.left_top_w,brh = tree.right_bottom_h, brw = tree.right_bottom_w;
 	if(tree.data->pre_type == Node::INTRA_PREDICTION){
 		Pattern::de_predict(block,residual_block,tph,tpw,brh,brw,block_buffer_pool,tree.data->prediction,para);

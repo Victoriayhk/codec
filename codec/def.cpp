@@ -48,6 +48,10 @@ AVFormat::~AVFormat()
 
 void AVFormat::setValue(const string & key, const string & value){
 
+	/**
+	*  解析参数 
+	*  李春尧
+	*/
 	if(key.compare("input_video") == 0){
 		strcpy(file_name,value.c_str());
 		
@@ -98,6 +102,10 @@ void AVFormat::setValue(const string & key, const string & value){
 
 }
 int AVFormat::load(const string & config_file ){
+	/**
+	* 配置文件解析
+	* 李春尧
+	*/
 	string line;
 	ifstream fin(config_file);
 	while(getline(fin,line)){
@@ -113,6 +121,11 @@ int AVFormat::load(const string & config_file ){
 }
 
 int AVFormat::load(int argc, char * argv[]){
+
+	 /**
+	 *  命令行参数解析
+	 *  李春尧
+	 */
 	if(argc == 1) return 0;
 	for(int i = 1; i < argc-1; i += 2 ){
 		string key = argv[i];
@@ -134,6 +147,10 @@ int AVFormat::load(int argc, char * argv[]){
 
 void AVFormat::getBlockSize(Block::BlockType  block_type, int& height, int& width)
 {
+	/**
+	*	获取块大小
+	*   高文逵
+	*/
 	if(block_type == Block::Y)
 	{
 		height = block_height;
@@ -174,6 +191,10 @@ void Block::print(AVFormat &para){
 
 void Block::getBlockSize(AVFormat &para, int& height, int& width)
 {
+	/**
+	*	获取块大小
+	*   高文逵
+	*/
 	if(block_type == Block::Y)
 	{
 		height = para.block_height;
@@ -196,6 +217,9 @@ Frame::~Frame()
 {
 }
 int Frame::init(AVFormat& para){
+	/**
+	*  帧 分配内存 初始化
+	*/
 	int h,w;
 	para.getBlockSize(Block::Y,h,w);
 	Yblock.resize(para.block_num,Block(Block::Y,h,w));

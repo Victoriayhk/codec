@@ -8,7 +8,14 @@
 #include "util.h"
 
 
+ /**
+ *  解码数据缓存，用于下一块或者下一帧的预测
+ *  李春尧
+ **/
 class BlockBufferPool{
+	/**
+	*  一帧数据
+	*/
 	std::vector<uint8_t> frame;
 	int height;
 	int width;
@@ -24,14 +31,8 @@ public:
 	int clear();
 };
 
-
+ /**
+ *     使用循环队列结构存储帧池
+ **/
 typedef CyclePool<BlockBufferPool> FrameBufferPool;
-//class FrameBufferPool{
-//	int max_size;
-//	std::list<BlockBufferPool * > decoded_frame;
-//
-//public:
-//	FrameBufferPool(int size):max_size(size){}
-//	int add_frame_to_pool(BlockBufferPool * frame);
-//};
 

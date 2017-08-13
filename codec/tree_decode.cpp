@@ -11,7 +11,10 @@
 #include "dctInterface.h"
 
 
-
+/**
+*  根据树解码一个宏块
+*  李春尧
+*/
 inline int decode_with_tree(Block & block, ResidualBlock & residual_block,Tree & tree,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para){
 	
 		
@@ -35,7 +38,10 @@ inline int decode_with_tree(Block & block, ResidualBlock & residual_block,Tree &
 	return 0;
 }
 
-
+/**
+*  解码一个宏块
+*  李春尧
+*/
 inline int tree_decode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
 
 	int h,w;
@@ -49,7 +55,10 @@ inline int tree_decode_one_block(Block & block,ResidualBlock & residual_block,AV
 	return 0;
 }
 
-
+/**
+*  解码一个分量
+*  李春尧
+*/
 inline int tree_decode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,AVFormat &para,FrameBufferPool & frame_pool){
 
 	BlockBufferPool & decode_buffer = frame_pool.new_back();
@@ -67,6 +76,10 @@ inline int tree_decode_one_component(vector<Block> & blocks, std::vector<Residua
 }
 
 
+/**
+*  并行解码一帧
+*  李春尧
+*/
 int tree_decode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool*>  &frame_pool){
 
 	#pragma omp parallel sections num_threads(3)

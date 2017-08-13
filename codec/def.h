@@ -120,7 +120,9 @@ public:
 	double quantizationU;
 	double quantizationV;
 
-
+	/**
+	*  Ê÷µÄ¼õÖ¦ÏµÊý
+	*/
 	double split_gamma;
 	bool is_tree;
 	/**

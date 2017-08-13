@@ -58,9 +58,13 @@ void ResidualBlock::getBlockSize(AVFormat &para, int& height, int& width)
 	}
 }
 
-	
-int Node::to_stream(unsigned char * stream){
 
+
+/**
+*    节点的流化
+*    李春尧
+**/
+int Node::to_stream(unsigned char * stream){
 	*(stream) = (0x7F & prediction);
 	int byte = 1;
 	if(pre_type == INTRA_PREDICTION){
@@ -82,6 +86,10 @@ int Node::to_stream(unsigned char * stream){
 	return byte;
 }
 
+/**
+*    节点的反流化
+*    李春尧
+**/
 int Node::from_stream(unsigned char * stream){
 	int need_byte = 0;
 	prediction = (*(stream + need_byte)) & ((unsigned char)0x7F);
@@ -114,6 +122,13 @@ Tree::Tree(int left_top_h,int left_top_w,int right_bottom_h,int right_bottom_w):
 				split_direction(NONE),left(nullptr),right(nullptr),
 				left_top_h(left_top_h),left_top_w(left_top_w),right_bottom_h(right_bottom_h),right_bottom_w(right_bottom_w),score(-1){
 }
+
+
+
+/**
+*    树的流化
+*    李春尧
+**/
 void Tree::serialize(unsigned char * stream,int &byte,int &bit,int * used_node_ids,int &idx){
 	unsigned char * tmp = stream + byte;
 
@@ -144,6 +159,10 @@ void Tree::serialize(unsigned char * stream,int &byte,int &bit,int * used_node_i
 	
 }
 
+/**
+*    树的反流化
+*    李春尧
+**/
 void Tree::deserialize(unsigned char * stream,int &byte,int &bit,Node * node_list,int &idx,int block_id,int block_type){
 	unsigned char * tmp = stream + byte;
 	unsigned char type = ((*tmp) >> bit) & (unsigned char)0x03;
@@ -215,7 +234,10 @@ void Tree::deserialize(unsigned char * stream,int &byte,int &bit,Node * node_lis
 	
 }
 
-
+/**
+*    树的流化api
+*    李春尧
+**/
 int Tree::to_stream(unsigned char * stream,int * used_node_ids,int &num){
 	int byte = 0,bit = 0,idx=0;
 	this->serialize(stream,byte,bit,used_node_ids,idx);
@@ -227,7 +249,10 @@ int Tree::to_stream(unsigned char * stream,int * used_node_ids,int &num){
 	return byte;
 }
 
-
+/**
+*    树的反流化api
+*    李春尧
+**/
 int Tree::from_stream(unsigned char * stream,Node * node_list,int &num,int block_id,int type){
 	int byte = 0,bit = 0,idx=0;
 	this->deserialize(stream,byte,bit,node_list,idx,block_id,type);
@@ -272,6 +297,7 @@ int ResidualBlock::tree_to_stream(){
 /*
 * 将ResidualBlock写入流
 * 流stream需要预先开辟空间
+*  已废弃
 */
 
 int ResidualBlock::to_stream(unsigned char *stream,AVFormat &para) {
@@ -315,6 +341,7 @@ int ResidualBlock::to_stream(unsigned char *stream,AVFormat &para) {
 
 /*
 * 从流中还原出ResidualBlock
+* *  已废弃
 */
 
 int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &para) {
@@ -356,7 +383,10 @@ int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &p
 	return p - stream;
 }
 
-
+/*
+* 将ResidualBlock的分块和模式信息写入流
+* 流stream需要预先开辟空间
+*/
 int ResidualBlock::head_to_stream(unsigned char *stream,AVFormat &para){
 	unsigned char *p = stream;
 
@@ -388,7 +418,10 @@ int ResidualBlock::head_to_stream(unsigned char *stream,AVFormat &para){
 
 	return p - stream;
 }
-
+/*
+* 将ResidualBlock的分块和模式信息从流读入
+* 流stream需要预先开辟空间
+*/
 int ResidualBlock::head_from_stream(unsigned char *stream, AVFormat &para){
 	unsigned char *p = stream;
 	if(!para.is_tree){
@@ -427,12 +460,21 @@ int ResidualBlock::head_from_stream(unsigned char *stream, AVFormat &para){
 
 }
 
+/*
+* 将ResidualBlock的数据信息写入流
+* 流stream需要预先开辟空间
+*/
 int ResidualBlock::data_to_stream(unsigned char *stream,AVFormat &para){
 	unsigned char *p = stream;
 	short *pdata = data.data(); 
 	p += save_to_buffer(pdata, p,data.size() * sizeof(data[0]));
 	return p - stream;
 }
+
+/*
+* 将ResidualBlock的数据信息从流读入
+* 流stream需要预先开辟空间
+*/
 int ResidualBlock::data_from_stream(unsigned char *stream, int block_size, AVFormat &para){
 	unsigned char *p = stream;
 	data.resize(block_size);
@@ -528,7 +570,9 @@ int PKT::from_stream(unsigned char *stream, AVFormat &para) {
 	return p - stream;
 }
 
-
+/**
+*  将一个分量写入流
+*/
 int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & list){
 
 	uint8_t *head_out = nullptr;
@@ -721,6 +765,9 @@ int PKT::stream_write(AVFormat& para)
 	return 0;
 }
 
+/**
+*  将一个分量从流读入
+*/
 int PKT::stream_read_one_component(AVFormat& para,std::vector<ResidualBlock> & list,Block::BlockType type){
 	cache::reset(type);
 	uint8_t *tmp_head_t = nullptr;
