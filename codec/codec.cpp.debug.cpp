@@ -1,4 +1,11 @@
 
+/*
+** 主函数代码，用于之前测试，包含更多的输入输出
+*/
+
+//#define DEBUG_TEST
+
+#ifdef DEBUG_TEST
 
 // codec.cpp : 定义控制台应用程序的入口点。
 //
@@ -159,3 +166,4 @@ int main(int argc, char * argv[])
 
 
 
+#endif

@@ -12,6 +12,13 @@
 #include "dctInterface.h"
 using namespace std;
 
+//#define SIMPLE_SLICE
+
+/**
+** 简单宏块划分，用于树形结构完成之前的各模块验证，划分
+** 董辰辰
+*/
+#ifdef SIMPLE_SLICE
 
 const int N=3;  //预测方法的数量
 
@@ -153,3 +160,6 @@ int encode(Frame &frame,AVFormat &para,PKT &pkt,vector<FrameBufferPool*>  &frame
 	return 0;
 }
 
+
+
+#endif

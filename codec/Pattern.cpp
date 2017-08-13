@@ -14,6 +14,7 @@ extern int TABLE[1500][1500];
 
 /*
 **	帧内预测
+**	董辰辰
 */
 
 int Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int start_c,int end_r,int end_c, BlockBufferPool& whole_frame,int pattern_type, AVFormat &para,int i_offset,int j_offset){
@@ -149,7 +150,7 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 			else
 			{
 			}
-			int16_t tmp=(int16_t)r_block.data[pos + j] + block_pool;
+			int16_t tmp=(int16_t)r_block.data[pos + j] + block_pool; //类型转换，需要判断是否越界
 			if(tmp<0)
 				tmp=0;
 			else if(tmp>255)
