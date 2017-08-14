@@ -183,7 +183,10 @@ public:
 	~Frame();
 };
 
-
+/*
+** 非树形划分记录划分位置的四个坐标，左上角和右上角
+** 董辰辰
+*/
 struct pos{
 		int left_top_x;
 		int left_top_y;

@@ -14,23 +14,34 @@ extern int TABLE[1500][1500];
 
 /*
 **	帧内预测
+**  参数：
+**  block：输入的预测块  r_block：返回的残差块 
+**	start_r ... end_c :小宏块相对于大宏块的上下左右的坐标
+**  whole_frame :被参考的帧内池
+**  pattern_type：帧内预测的模式范围从0~3
+**	para：压缩的参数，包括定义宏块大小等。
+**	i_offset,j_offset 每一帧被划分成若干宏块进行存储，这两个坐标表示出宏块的位置偏移
 **	董辰辰
 */
 
 int Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int start_c,int end_r,int end_c, BlockBufferPool& whole_frame,int pattern_type, AVFormat &para,int i_offset,int j_offset){
 	int block_w, block_h;
 	r_block.getBlockSize(para, block_w, block_h);							// 当前block的宽和高
+
+	/**
+	** 计算宏块的偏移，为了避免重复计算，将计算宏块位置的代码上移通过参数进行传递
+	*/
 	//int i_offset = TABLE[r_block.block_id / para.block_num_per_row][block_h];// 当前block的起始像素所在Frame的行
 	//int j_offset = TABLE[(r_block.block_id % para.block_num_per_row)][block_w];	// 当前block的起始像素所在Frame的列
 	int diff = 0;		
 	for (int i = start_r; i <= end_r && i + i_offset < para.height; i++)
 	{
-		int pos=TABLE[i][block_w];
+		int pos=TABLE[i][block_w];                  //通过查表计算乘法，代表i*block_w
 		for (int j = start_c; j <= end_c && j + j_offset < para.width; j++) 
 		{
-			int16_t block_pool=128;
-			int c_i=-1,c_j=-1;  //相对于每一帧的坐标
-			if(pattern_type == 0&&i_offset>0)// 竖向预测, 参考小块上方的一条像素	
+			int16_t block_pool=128;   				//用于预测的像素值，默认为128，如果没有参考像素就取128
+			int c_i=-1,c_j=-1;  					//相对于每一帧的坐标,用于预测的数据对一个帧进行连续存储
+			if(pattern_type == 0&&i_offset>0)		// 竖向预测, 参考小块上方的一条像素	
 			{
 				c_i=start_r+i_offset - 1;
 				c_j=j_offset + j;
@@ -44,6 +55,9 @@ int Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int start_
 			}
 			else if (pattern_type == 2)//DC预测模式	
 			{
+				/*
+				** 计算左边位置和上面位置的平均值进行预测估计
+				*/
 				int left_row=0,left_col=0;
 				int top_row=0,top_col=0;
 				int left=128;int top=128;
@@ -65,31 +79,34 @@ int Pattern::predict(Block& block,ResidualBlock & r_block,int start_r,int start_
 			{
 				if(i-start_r>j-start_c)
 				{		//c_i=i-j+start_c+start_c-start_r-1+i_offset;
-						c_i=i-j+start_c-1+i_offset;
-						c_j=start_c-1+j_offset;
+					c_i=i-j+start_c-1+i_offset;
+					c_j=start_c-1+j_offset;
 		        }
 				else
 				{
-						c_i=start_r-1+i_offset;
+					c_i=start_r-1+i_offset;
 						//c_j=j-i-start_c+start_r+start_r-1+j_offset;
-						c_j=j-i+start_r-1+j_offset;
+					c_j=j-i+start_r-1+j_offset;
 				}
 				block_pool=(int16_t)whole_frame.getValue(c_i, c_j);
 			}
 			else
 			{
 			}
-			r_block.data[pos + j] = (int16_t)block.data[pos + j] - block_pool;
-			diff +=  Square_table[abs(r_block.data[pos + j])];
+			r_block.data[pos + j] = (int16_t)block.data[pos + j] - block_pool;    //通过小宏块的值和预测的值求残差
+			diff +=  Square_table[abs(r_block.data[pos + j])];                    //计算平方和用于计算RDO
 		}
 	}
 	return diff;
 }
-
+/*
+** 帧间反预测模块，参数和帧间预测模块的参数意义相同，注意在反预测时会进行更新预测池的操作
+** 董辰辰
+*/
 void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int start_c,int end_r,int end_c, BlockBufferPool& b_pool,int pattern_type, AVFormat &para) {
 	int block_w, block_h;
-	r_block.getBlockSize(para, block_w, block_h);							// 当前block的宽和高
-	int i_offset = TABLE[r_block.block_id / para.block_num_per_row][block_h];// 当前block的起始像素所在Frame的行
+	r_block.getBlockSize(para, block_w, block_h);								// 当前block的宽和高
+	int i_offset = TABLE[r_block.block_id / para.block_num_per_row][block_h];	// 当前block的起始像素所在Frame的行
 	int j_offset = TABLE[(r_block.block_id % para.block_num_per_row)][block_w];	// 当前block的起始像素所在Frame的列
 
 	for (int i = start_r; i <= end_r && i + i_offset < para.height; i++)
@@ -99,20 +116,21 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 		{
 			int16_t block_pool=128;
 			int c_i=-1,c_j=-1;
-			if(pattern_type == 0&&i_offset>0)// 竖向反预测, 参考小块上方的一条像素	
+			if(pattern_type == 0&&i_offset>0)		//竖向反预测, 参考小块上方的一条像素	
 			{
 				c_i=start_r+i_offset - 1;
 				c_j=j_offset + j;
 				block_pool=(int16_t)b_pool.getValue(c_i, c_j);
 			}
-			else if(pattern_type == 1&&j_offset>0)//横向反预测, 参考小块上方的一条像素	
+			else if(pattern_type == 1&&j_offset>0)	//横向反预测, 参考小块上方的一条像素	
 			{
 				c_i=i_offset + i;
 				c_j=j_offset - 1+start_c;
 				block_pool=(int16_t)b_pool.getValue(c_i, c_j);
 			}
-			else if (pattern_type == 2)//DC预测模式	
+			else if (pattern_type == 2)				//DC预测模式	
 			{
+				
 				int left_row=0,left_col=0;
 				int top_row=0,top_col=0;
 				int left=128;int top=128;
@@ -130,19 +148,19 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 				}
 				block_pool=(top+left)/2;
 			}
-			else if (pattern_type == 3&&i_offset>0&&j_offset>0)//右斜45度预测, 参考斜左上方的一条像素	
+			else if (pattern_type == 3&&i_offset>0&&j_offset>0)	//右斜45度预测, 参考斜左上方的一条像素	
 			{
-				if(i-start_r>j-start_c)
+				if(i-start_r>j-start_c)                        	//需要判断其用到的是坐标的像素还是上面的像素
 				{
-						//c_i=i-j+start_c+start_c-start_r-1+i_offset;
-						c_i=i-j+start_c-1+i_offset;
-						c_j=start_c-1+j_offset;
+					//c_i=i-j+start_c+start_c-start_r-1+i_offset;
+					c_i=i-j+start_c-1+i_offset;
+					c_j=start_c-1+j_offset;
 		        }
 				else
 				{
-						c_i=start_r-1+i_offset;
-						//c_j=j-i-start_c+start_r+start_r-1+j_offset;
-						c_j=j-i+start_r-1+j_offset;
+					c_i=start_r-1+i_offset;
+					//c_j=j-i-start_c+start_r+start_r-1+j_offset;
+					c_j=j-i+start_r-1+j_offset;
 
 				}
 				block_pool=(int16_t)b_pool.getValue(c_i, c_j);
@@ -150,15 +168,15 @@ void Pattern::de_predict(Block& blk,ResidualBlock & r_block,int start_r,int star
 			else
 			{
 			}
-			int16_t tmp=(int16_t)r_block.data[pos + j] + block_pool; //类型转换，需要判断是否越界
+			int16_t tmp=(int16_t)r_block.data[pos + j] + block_pool; 		//类型转换，需要判断是否越界
 			if(tmp<0)
 				tmp=0;
 			else if(tmp>255)
 				tmp=255;
 			else
 			{}
-			blk.data[pos + j] = tmp;
-			b_pool.setValue(i_offset + i, j_offset +j, blk.data[pos + j]);
+			blk.data[pos + j] = tmp;                                 
+			b_pool.setValue(i_offset + i, j_offset +j, blk.data[pos + j]); 	//更新预测的池，用于另外的宏块的参考
 		}
 	}
 }

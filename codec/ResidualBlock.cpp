@@ -496,7 +496,7 @@ int ResidualBlock::data_from_stream(unsigned char *stream, int block_size, AVFor
 int ResidualBlock::clear()
 {
 	//data.clear();
-	//node.clear();
+	//node.clear();  //清楚非树形划分中的保存的node信息，方便复用 董辰辰
 	//tree.clear();
 	memset(data.data(),0,data.size() * sizeof(data[0]));
 	return 0;

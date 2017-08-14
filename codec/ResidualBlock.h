@@ -117,6 +117,20 @@ public:
 
 };
 
+/*
+** 采用简单划分的方式的每个小块的结构体，每个结构体中只需要保存下面注释的信息，
+** 具体的小块尺寸可以由残差中的划分方式决定
+** 董辰辰
+** 被树结构代替，已废弃
+*/
+
+struct mini_block
+{
+	bool predit_type;     //帧内还是帧间，0帧内，1帧间
+	int intra_type;       //如果是帧内的预测就记录其预测模式
+	InterMV inter_node;   //如果是帧间的预测就记录其运动矢量和参考帧
+};
+
 
 /**
 *   残差块
@@ -129,8 +143,17 @@ class ResidualBlock
 	*/
 public:
 	int block_id;
-	int type_slice;
-	vector<int> node;
+
+	/**
+	** 简单划分的结构
+	** 董辰辰
+	** 树形划分中未使用
+	*/
+	int type_slice;  //划分的类型0代表16*16划分，1代表划分成8*8
+
+	vector<mini_block> child_block; //保存每种划分方式的子块的信息，16*16划分就只有一个元素，8*8划分有四个元素
+
+
 	std::vector<int16_t> data;
 	bool is_tree;
 	/**
