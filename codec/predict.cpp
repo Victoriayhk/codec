@@ -12,6 +12,7 @@ int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPo
 {
 	/**
 	*   根据分块树来预测，返回残差矩阵
+    *   主要输入为 block 主要输出为 residual_block
 	*   李春尧
 	*/
 	InterMV tmp_inter_mv;
@@ -41,7 +42,8 @@ int predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPo
 int intra_predict(Block &block,ResidualBlock  &residual_block,Tree &tree,BlockBufferPool & block_buffer_pool,Block & buffer_block,AVFormat & para,int & min_score,int i_offset,int j_offset){
 	
 	/**
-	*   帧内搜索，记录最好的模式（具体帧间预测算法在pattern）
+	*   帧内搜索，记录最好的模式（具体帧间预测算法在pattern)
+    *   遍历所有帧内模式，找到最好的模式，记录在tree中
 	*   李春尧
 	*/
 	int best_pattern = 0;
@@ -93,8 +95,9 @@ int search_predict_pattern(Block &block,ResidualBlock  &residual_block,Tree &tre
 	*   李春尧
 	*/
 	int score = INT_MAX;
+    //每一帧都进行帧内搜索
 	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score,i_offset,j_offset);
-	if(frame_pool.size() > 1)
+	if(frame_pool.size() > 1)// 第一帧不进行帧间搜索
 		inter_predict(block,residual_block,tree,frame_pool,buffer_block,para,score,i_offset,j_offset);
 	//else
 	//	intra_predict(block,residual_block,tree,block_buffer_pool,buffer_block,para,score,i_offset,j_offset);

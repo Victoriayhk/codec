@@ -15,6 +15,7 @@
 extern int TABLE[1500][1500];
 
 #define EIGHT_BIT_MODE 15
+#define ZIG_ZAG_MODE 1
 
 //#define WIN32
 
@@ -1084,9 +1085,9 @@ int huffman_decode_memory(const unsigned char *bufin,
 	*pbufoutlen = bufcur;
 	return 0;
 }
-
+//////////////////////////////////////////
 /* 
-* 块级流化处理
+* 实现宏块级流化处理
 * 输入：
 * f_x f_y l_x l_y	残差的左上角及右下角坐标
 * rBlock			残差块
@@ -1095,10 +1096,10 @@ int huffman_decode_memory(const unsigned char *bufin,
 */
 int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream)
 {
-	int bit_num = 9;
-	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
-	int sign_size = (b_size + 7) >>3;
-	double quantization_num;
+	int bit_num = 9;								//默认使用9bit流化
+	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);		//数据占用字节数
+	int sign_size = (b_size + 7) >>3;				//符号位占用字节数
+	double quantization_num;						//量化系数
 	if(rBlock.block_type == Block::Y)
 	{
 		quantization_num = para.quantizationY;
@@ -1117,7 +1118,7 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	//	b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
 	//	sign_size = (b_size) * 0.125;
 	//}
-	if(quantization_num>EIGHT_BIT_MODE)	//8bit流流化，默认为9bit流化
+	if(quantization_num>EIGHT_BIT_MODE)	//8bit流流化
 	{
 		bit_num = 8;
 		b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
@@ -1127,13 +1128,13 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	uint8_t * tmp_stream = nullptr;
 	uint8_t* out_stream = nullptr;
 	
-	entropy_to_stream_bit(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream,bit_num);
+	entropy_to_stream_bit(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream,bit_num);	//宏块数据流化
 
 	uint8_t *p = tmp_stream;
 
 	unsigned int out_length;
 	
-	int buff_length = huffman_encode_memory(tmp_stream, (b_size + sign_size) * sizeof(uint8_t), &out_stream, &out_length);
+	int buff_length = huffman_encode_memory(tmp_stream, (b_size + sign_size) * sizeof(uint8_t), &out_stream, &out_length);	//流化后数据进行huffman编码
 
 	*stream = (uint8_t *)malloc(sizeof(unsigned int));
 	uint8_t *point = *stream;
@@ -1212,7 +1213,15 @@ int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	return 0;
 }
 
-
+/* 
+* 残差块转9bit数据流
+* 输入：
+* f_x f_y l_x l_y	残差的左上角及右下角坐标
+* rBlock			残差块
+* para				配置信息
+* stream			输出流信息
+* 输出：			流长度
+*/
 int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream )
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
@@ -1228,8 +1237,8 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 
 	//int16_t* p = rBlock.data.data();
 	//bitset<8> sign_group(positive);
-	uint8_t sign_group = 0x0;
-	int sign_num = 0;
+	uint8_t sign_group = 0x0;	//存储符号位的临时存储区
+	int sign_num = 0;	//当前sign_group中存储了几个符号位
 	int width;
 	int height;
 	rBlock.getBlockSize(para,height,width);
@@ -1247,13 +1256,15 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 			int temp = rBlock.data[TABLE[i][width] + j];
 			if(temp>=0)	//符号位流化
 			{
-				sign_group = sign_group<<1;
+				//sign_group = sign_group<<1;
+				sign_group <<= 1;
 			}
 			else
 			{
-				sign_group = sign_group<<1;
+				//sign_group = sign_group<<1;
+				sign_group <<= 1;
 				sign_group |= 0x01;
-				temp = -rBlock.data[TABLE[i][width] + j];
+				temp = -temp;
 			}
 			++sign_num;
 			if(sign_num>=8)	//符号位满8位进行写入
@@ -1266,7 +1277,7 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 			*num_flag++ = temp;
 		}
 	}
-	if(sign_num!=0)		//符号位未全部写入时
+	if(sign_num!=0)		//符号位未全部写入时补0处理
 	{
 		*sign_flag = sign_group;
 		sign_num = sign_num<<(8-sign_num);
@@ -1275,6 +1286,15 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 	return b_size + sign_size;
 }
 
+/* 
+* 将9bit数据流转残差块数据
+* 输入：
+* f_x f_y l_x l_y	残差的左上角及右下角坐标
+* rBlock			残差块
+* para				配置信息
+* stream			输入流信息
+* 输出：			流长度
+*/
 int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream)
 {
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
@@ -1293,7 +1313,7 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 
 	p = sign_flag + sign_size * sizeof(uint8_t);
 
-	for(int i = f_y;i<l_y +1;++i)
+	for(int i = f_y;i<l_y +1;++i)	//数据读取
 	{
 		for(int j = f_x;j<l_x +1;++j)
 		{
@@ -1310,7 +1330,7 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 	
 	p = sign_flag;
 	uint8_t temp;
-	for(int i =0;i<sign_size;++i)
+	for(int i =0;i<sign_size;++i)		//符号读取
 	{
 		temp = *p++;
 		bitset<8> b_temp(temp); 
@@ -1326,6 +1346,15 @@ int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBloc
 	return b_size + sign_size;
 }
 
+/* 
+* slice级转二进制流的函数
+* 输入：
+* f_x f_y l_x l_y	残差的左上角及右下角坐标
+* rBlock			残差块
+* para				配置信息
+* stream			输出流化后的信息
+* len				数据流长度
+*/
 int entropy_encode_slice(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream, unsigned int* len)
 {
 	int height,width;
@@ -1502,30 +1531,36 @@ int entropy_encode_pkt(PKT& pkt, AVFormat& para, uint8_t **stream, unsigned int 
 //	}
 //}
 
+
+/*
+* 根据bit数对残差数据进行流化处理的函数
+* f_x , f_y 左上角坐标
+* l_x , l_y 右下角坐标
+* rBlock 残差数据信息
+* para 配置信息
+* stream 返回流信息
+* bit_len 采用流化的bit模式
+*/
 int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream, int bit_len)
 {
-	int b_size;
-	int sign_size;
+	int b_size = 0;		//数据占用总字节数
+	int sign_size = 0;	//符号位占用总字节数
 
-	int width;
-	int height; 
+	int width = 0;		//宏块宽和高
+	int height = 0; 
 	rBlock.getBlockSize(para,height,width);
 
-	if(bit_len == 9)
+	if(bit_len == 9)	//9bit流化
 	{
 		return entropy_to_stream(f_x,f_y,l_x,l_y,rBlock,para,stream);
 	}
-	else if(bit_len == 8)
+	else if(bit_len == 8)	//8bit流化
 	{
-		uint8_t zag_zig_stream[256];
-		int zero_num = zag_zig(rBlock,para,zag_zig_stream);
-		rBlock.left_zero_num = zero_num;
-		//ResidualBlock rBlock2 = ResidualBlock(rBlock.block_type,width,height);
-		//rBlock2.left_zero_num = zero_num;
-		//unzag_zig(rBlock2,para,zag_zig_stream,zero_num);
-		//if(zero_num>8)
-		if(1)
+		if(ZIG_ZAG_MODE)
 		{
+			uint8_t zag_zig_stream[256];
+			int zero_num = zag_zig(rBlock,para,zag_zig_stream);	//Z扫描编码
+			rBlock.left_zero_num = zero_num;
 			*stream =(uint8_t*)malloc(sizeof(uint8_t) *height * width - zero_num);
 			memcpy(*stream,zag_zig_stream,sizeof(uint8_t) *height * width - zero_num);
 
@@ -1628,6 +1663,15 @@ int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBl
 	return 0;
 }
 
+/*
+* 根据bit数对数据流进行反流化处理的函数
+* f_x , f_y 左上角坐标
+* l_x , l_y 右下角坐标
+* rBlock 残差数据信息
+* para 配置信息
+* stream 输入数据流
+* bit_len 采用流化的bit模式
+*/
 int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream, int bit_len)
 {
 	if(bit_len == 9)
@@ -1636,9 +1680,9 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 	}
 	else if(bit_len == 8)
 	{
-		if(1)
+		if(ZIG_ZAG_MODE)
 		{
-			return unzag_zig(rBlock,para,stream,rBlock.left_zero_num);
+			return unzag_zig(rBlock,para,stream,rBlock.left_zero_num);	//将Z扫描编码数据保存到残差数据块
 		}
 		else{
 			int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
@@ -1732,13 +1776,20 @@ int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& r
 	return 0;
 }
 
+/*	帧级流化处理
+*	rBlock		残差块数组
+*	block_len	残差块数目
+*	para		配置信息
+*	stream		数据流
+*	len			数据流长度
+*/
 int entropy_encode_by_frame(ResidualBlock* rBlock ,int block_len, AVFormat& para, uint8_t **stream,unsigned int* len)
 {
-	int height,width;
-	unsigned int out_len = 0;
+	int height = 0,width = 0;	//宏块长宽
+	unsigned int out_len = 0;	//huffman编码后输出码流长度
 	rBlock[0].getBlockSize(para,height,width);
 
-	int stream_len = 0;
+	int stream_len = 0;			//码流长度
 
 	//*stream = nullptr;
 	uint8_t* tmp_stream =  (uint8_t*)malloc(10000000);
@@ -1746,7 +1797,7 @@ int entropy_encode_by_frame(ResidualBlock* rBlock ,int block_len, AVFormat& para
 
 	uint8_t* point = tmp_stream;
 
-	for(int i = 0 ;i < block_len ; ++i)
+	for(int i = 0 ;i < block_len ; ++i)//逐宏块进行数据流化
 	{
 		unsigned int code_stream_len = 0;
 		code_stream_len = entropy_encode_block_by_frame(0,0,width-1,height-1,rBlock[i],para, &point);
@@ -1771,10 +1822,19 @@ int entropy_encode_by_frame(ResidualBlock* rBlock ,int block_len, AVFormat& para
 	return 0;
 }
 
+/*
+* 采用帧级数据熵编码策略时使用的流化处理函数
+* f_x , f_y 宏块左上角坐标
+* l_x , l_y 宏块右下角坐标
+* rBlock 残差宏块数据
+* para 配置信息
+* stream 返回二进制流
+*/
+
 int entropy_encode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream)
 {
 	unsigned int out_length;
-	int bit_num = 9;
+	int bit_num = 9;		//默认采用9bit流化策略
 	//int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	//int sign_size = (b_size + 7) * 0.125;
 	double quantization_num;
@@ -1790,13 +1850,13 @@ int entropy_encode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBl
 	{
 		quantization_num = para.quantizationV;
 	}
-	//if(quantization_num>79)
+	//if(quantization_num>79)	//已经弃用的4bit流化策略
 	//{
 	//	bit_num = 4;
 	//	b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
 	//	sign_size = (b_size) * 0.125;
 	//}
-	if(quantization_num>16)
+	if(quantization_num>EIGHT_BIT_MODE)	//当量化值高于阈值时采用8bit流化策略
 	{
 		bit_num = 8;
 		//b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
@@ -1806,7 +1866,7 @@ int entropy_encode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBl
 	uint8_t * tmp_stream = nullptr;
 	uint8_t* out_stream = nullptr;
 	uint8_t *point = *stream;
-	out_length = entropy_to_stream_bit(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream,bit_num);
+	out_length = entropy_to_stream_bit(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream,bit_num);		//数据流化
 
 	uint8_t *p = tmp_stream;
 	point = *stream;
@@ -1817,6 +1877,16 @@ int entropy_encode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBl
 
 	return out_length;
 }
+
+/*
+* 采用帧级数据熵编码策略时使用的反流化处理函数
+* f_x , f_y 宏块左上角坐标
+* l_x , l_y 宏块右下角坐标
+* rBlock 残差宏块数据
+* para 配置信息
+* stream 返回二进制流
+* buff_length 流长度
+*/
 
 int entropy_decode_by_frame(ResidualBlock* rBlock,int block_num , AVFormat& para, uint8_t *stream, unsigned int buff_length)
 {
@@ -1848,6 +1918,14 @@ int entropy_decode_by_frame(ResidualBlock* rBlock,int block_num , AVFormat& para
 	return 0;
 }
 
+/*
+*	帧级下的宏块反流化处理
+*	f_x，f_y	左上角坐标
+*	l_x，l_y	右下角坐标
+*	rBlock		残差块
+*	para		配置信息
+*	stream		数据流
+*/
 int entropy_decode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream)
 {
 	int bit_num = 9;
@@ -1880,6 +1958,12 @@ int entropy_decode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBl
 
 }
 
+/*
+*	Z扫描处理
+*	rBlock			残差数据
+*	para			配置信息
+*	zag_zig_stream	Z扫描后的流
+*/
 int zag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream)
 {
 	int height,width;
@@ -1959,6 +2043,13 @@ int zag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream)
 	return zero_num;
 }
 
+/*
+*	逆Z扫描处理函数
+*	rBlock			保存数据的残差块
+*	para			配置信息
+*	zag_zig_stream	Z扫描流
+*	zero_num		尾0个数
+*/
 int unzag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream, int zero_num)
 {
 	int height,width;
@@ -2027,6 +2118,7 @@ int unzag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream, in
 	return height*width - rBlock.left_zero_num;
 }
 
+//////////////////单元测试用函数////////////////
 void head_test()
 {
 	AVFormat para;

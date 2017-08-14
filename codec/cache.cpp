@@ -1,7 +1,10 @@
 #include "cache.h"
 
 
-
+/**
+* 树的缓存结构，节省堆空间开销
+* 李春尧
+**/
 Tree cache::tree_buff[3][3600 * 3 * 128];
 map<uint64_t,uint32_t> cache::dp[3];
 int cache::cur[3];

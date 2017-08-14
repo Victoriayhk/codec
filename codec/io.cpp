@@ -6,6 +6,10 @@ using namespace std;
 
 extern int TABLE[1500][1500];
 
+/* YUV文件读写
+* 易惠康
+*/
+
 /*
 * 从AVFormat para中指定的文件(.video)的当前位置读入一帧数据
 Args: 

@@ -40,6 +40,10 @@ ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),curr_node(0),dat
 	//tree = tree(0,0,height,width);
 }
 
+/**
+* 获取一个新Node
+* 李春尧
+*/
 Node & ResidualBlock::get_node(int &id){
 	id = curr_node;
 	return node_list[curr_node++];
@@ -389,6 +393,7 @@ int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &p
 /*
 * 将ResidualBlock的分块和模式信息写入流
 * 流stream需要预先开辟空间
+* 李春尧
 */
 int ResidualBlock::head_to_stream(unsigned char *stream,AVFormat &para){
 	unsigned char *p = stream;
@@ -424,6 +429,7 @@ int ResidualBlock::head_to_stream(unsigned char *stream,AVFormat &para){
 /*
 * 将ResidualBlock的分块和模式信息从流读入
 * 流stream需要预先开辟空间
+* 李春尧
 */
 int ResidualBlock::head_from_stream(unsigned char *stream, AVFormat &para){
 	unsigned char *p = stream;
@@ -526,6 +532,7 @@ int PKT::init(AVFormat& para){
 /*
 * 将PKT写入流
 * 流stream需要预先开辟空间
+* 废弃
 */
 
 int PKT::to_stream(unsigned char *stream, AVFormat &para) {
@@ -547,6 +554,7 @@ int PKT::to_stream(unsigned char *stream, AVFormat &para) {
 
 /*
 * 从流中还原出PKT
+* 废弃
 */
 int PKT::from_stream(unsigned char *stream, AVFormat &para) {
 	unsigned char *p = stream;
@@ -594,7 +602,7 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 	uint8_t *head_point = tmp_head_t;
 	
 
-	entropy_encode_by_frame(list.data(),block_num,para,&tmp_stream,&len);
+	entropy_encode_by_frame(list.data(),block_num,para,&tmp_stream,&len);		//帧数据流化
 
 
 	for(int i = 0;i<list.size();++i)
@@ -612,10 +620,10 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 	
 		head_point += one_head_len;
 		head_len += one_head_len;
-	}
+	}//对帧中所有宏块头进行合并流化处理
 
 
-	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
+	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//头数据流化
 	//toch4(head_out_len,head_len_ch);
 
 	fwrite(&head_out_len,sizeof(unsigned int),1,para.stream_writer);
