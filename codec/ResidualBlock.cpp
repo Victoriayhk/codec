@@ -602,7 +602,7 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 	uint8_t *head_point = tmp_head_t;
 	
 
-	entropy_encode_by_frame(list.data(),block_num,para,&tmp_stream,&len);
+	entropy_encode_by_frame(list.data(),block_num,para,&tmp_stream,&len);		//帧数据流化
 
 
 	for(int i = 0;i<list.size();++i)
@@ -620,10 +620,10 @@ int PKT::stream_write_one_component(AVFormat& para,std::vector<ResidualBlock> & 
 	
 		head_point += one_head_len;
 		head_len += one_head_len;
-	}
+	}//对帧中所有宏块头进行合并流化处理
 
 
-	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//2017/8/9 gaowk
+	huffman_encode_memory(tmp_head_t,head_len,&head_out,&head_out_len);	//头数据流化
 	//toch4(head_out_len,head_len_ch);
 
 	fwrite(&head_out_len,sizeof(unsigned int),1,para.stream_writer);

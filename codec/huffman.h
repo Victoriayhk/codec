@@ -4,11 +4,13 @@
  *  Copyright (C) 2003  Douglas Ryan Richardson
  */
 
- /*
+/*
 *	2017-8-13 gaowenkui
 *	实现数据流化及熵编码操作
 *	完成除Huffman编解码具体函数以外的部分
- */
+*	采用帧级流化模式
+*	宏块级流化模式和slice级流化模式未启用
+*/
 #ifndef HUFFMAN_HUFFMAN_H
 #define HUFFMAN_HUFFMAN_H
 
@@ -50,16 +52,16 @@ int entropy_encode_by_frame(ResidualBlock* rBlock ,int block_len, AVFormat& para
 // 帧级反流化处理
 int entropy_decode_by_frame(ResidualBlock* rBlock,int block_len , AVFormat& para, uint8_t *stream, unsigned int buff_length);
 
-//宏块级的Z扫描操作
+// Z扫描操作
 int zag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream);
 
-//宏块级的反Z扫描操作
+// 反Z扫描操作
 int unzag_zig(ResidualBlock& rBlock, AVFormat& para, uint8_t* zag_zig_stream, int zero_num);
 
-// 块级流化处理
+// 宏块级流化处理
 int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
 
-// 块级反流化处理
+// 宏块级反流化处理
 int entropy_encode_block_2(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream);
 
 // 帧级下的宏块流化处理
@@ -72,11 +74,11 @@ int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 int entropy_decode_block_by_frame(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream);
 
 // 残差块转二进制流
-int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream);
+int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream);	//残差块转9bit二进制流
 int entropy_to_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t** stream, int bit_len = 8);
 
 // 二进制流转残差块
-int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream);
+int entropy_from_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream);	//9bit二进制流转残差块
 int entropy_from_stream_bit(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t* stream, int bit_len = 8);
 
 /*
@@ -116,6 +118,4 @@ inline void toch4(T val, uint8_t* result)	// 将任意类型的数转化为uint8_t的数组
 		result[i] = (uint8_t)(val>>(8*(len-i -1)) & 0x000000ff);
 	}
 }
-
-//void fromch4(unsigned int& result, uint8_t* val);
 #endif
