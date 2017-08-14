@@ -1,13 +1,17 @@
 
-//#define SIMPLE_SLICE
-
 /**
 ** 简单宏块划分，用于树形结构完成之前的各模块验证，划分
+** 衔接上树之后针对上层接口做了修改，不再适配
 ** 董辰辰
 */
+
+
+//#define SIMPLE_SLICE
+
+
 #ifdef SIMPLE_SLICE
 
-
+#include "def.h"
 #include "predict.h"
 #include "encode.h"
 #include <queue>
@@ -22,7 +26,7 @@ using namespace std;
 
 const int N=3;  //帧内预测方法的数量 在树形划分中整合到AVFormat参数中这里未设置
 
-
+struct mini_block;
 
 
 /*
@@ -70,7 +74,7 @@ int block_min(int *p,int N,int &pos,int &value)
 ** block 输入的宏块用于计算残差
 ** residual_block 输出的残差模块 
 **  whole_frame 帧内预测用到的缓冲池
-** FrameBufferPool 帧间预测用到的缓冲池
+** frame_pool 帧间预测用到的缓冲池
 ** h,w 宏块的长宽
 ** para  系统设定的编码参数
 ** best_value_16 返回16*16划分下的rdo最小值
@@ -78,31 +82,31 @@ int block_min(int *p,int N,int &pos,int &value)
 */
 
 
-mini_block cal_best_predict_16(Block block,ResidualBlock r_block,int h,int w,BlockBufferPool& whole_frame, FrameBufferPool & frame_pool，AVFormat &para,int &best_value_16)
+mini_block cal_best_predict_16(Block block,ResidualBlock r_block,int h,int w,BlockBufferPool& whole_frame, FrameBufferPool & frame_pool,AVFormat &para,int &best_value_16)
 {
 	mini_block res;
 	
    /*
    ** 计算帧内预测的最小值和对应的模式
    */
-   	double 	_16_16_pattern[N]; //帧内预测的返回值
+   	int 	_16_16_pattern[N]; //帧内预测的返回值
 	for(int i=0;i<N;++i){
-	 _16_16_pattern[i]=Pattern::predict(block,residual_block,0,0,h-1,w-1,block_buffer_pool,i,para); //返回所有帧内预测的rdo值
+	 _16_16_pattern[i]=Pattern::predict(block, r_block,0,0,h-1,w-1, whole_frame,i,para); //返回所有帧内预测的rdo值
 	}
 
 	int pos16;
-	double intra_value16;
+	int intra_value16;
 	block_min(_16_16_pattern,N,pos16,intra_value16);  //重载max函数计算16*16模式中的最小值
 	
 	
    /*
    ** 计算帧间预测的最小值和对应运动向量
    */
-	double 	inter_value16; 
+	int  inter_value16; 
 	InterMV inter_mv;
-	inter_16_16=Pattern::inter_predict(block, residual_block, 0, 0, h-1, w-1, frame_pool, inter_mv, para);
+	inter_value16=Pattern::inter_predict(block, r_block, 0, 0, h-1, w-1, frame_pool, inter_mv, para);
 
-	if(inter_value16>0&&inter_value16< intra_value16)           //帧间预测最优
+	if(inter_value16>0&&inter_value16<intra_value16)           //帧间预测最优
 	{
 		res.predit_type=1;
 		res.inter_node=inter_mv;	
@@ -123,35 +127,35 @@ mini_block cal_best_predict_16(Block block,ResidualBlock r_block,int h,int w,Blo
 ** 非树形划分方式下计算8*8（UV4*4）划分中的最优预测，使用帧内还是帧间
 ** 参数：
 ** block 输入的宏块用于计算残差
-** residual_block 输出的残差模块 
+** r_block 输出的残差模块 
 ** whole_frame 帧内预测用到的缓冲池
-** FrameBufferPool 帧间预测用到的缓冲池
+** frame_pool 帧间预测用到的缓冲池
 ** para  系统设定的编码参数
 ** best_value_8 返回8*8划分下的rdo最小值
 ** position 保存8*8或者4*4（UV）划分坐标
 ** 董辰辰
 */
 
-vector<mini_block> cal_best_predict_8(Block block,ResidualBlock r_block,BlockBufferPool& whole_frame, FrameBufferPool & frame_pool，AVFormat &para,int &best_value_8，vector<pos>& position)
+vector<mini_block> cal_best_predict_8(Block block,ResidualBlock r_block,BlockBufferPool& whole_frame, FrameBufferPool & frame_pool,AVFormat &para,int &best_value_8,vector<pos>& position)
 {
 
 	vector<mini_block> vec_8_8;
-	double min_value8 = 0; //8*8min_value
+	int min_value8 = 0; //8*8min_value
 	
 	
 	/*
 	**帧内预测参数
 	*/
 	int pos8;
-	double _8_8_pattern[4][N];  //四个小块每个N中帧内预测值进行保存
-	double intra_value8;		//intra min value
+	int _8_8_pattern[4][N];  //四个小块每个N中帧内预测值进行保存
+	int intra_value8;		//intra min value
 	
 
 	/*
 	**帧间预测参数
 	*/
 	InterMV inter_mv;
-	double inter_value8;   //inter min value
+	int inter_value8;   //inter min value
 
 
 	for (int i = 0; i < 4; ++i)
@@ -159,7 +163,7 @@ vector<mini_block> cal_best_predict_8(Block block,ResidualBlock r_block,BlockBuf
 		for (int j = 0; j < N; ++j)
 		{
 			_8_8_pattern[i][j] = Pattern::predict(block, residual_block, position[i].left_top_x, position[i].left_top_y,
-												  position[i].right_bottom_x, position[i].right_bottom_y, block_buffer_pool, j, para);
+												  position[i].right_bottom_x, position[i].right_bottom_y,whole_frame, j, para);
 		}
 		block_min(_8_8_pattern[i], N, pos8, intra_value8); //  计算某个小块帧内预测的最好值和对应的位置
 
@@ -179,13 +183,14 @@ vector<mini_block> cal_best_predict_8(Block block,ResidualBlock r_block,BlockBuf
 			*/
 			Pattern::inter_predict(block, residual_block, position[i].left_top_x, position[i].left_top_y,
 								   position[i].right_bottom_x, position[i].right_bottom_y, frame_pool, inter_mv, para);
-			dct_trans(residual_block, position[i].left_top_x, position[i].left_top_y, position[i].right_bottom_x, position[i].right_bottom_y, h, w);			quantization(position[i].left_top_x, position[i].left_top_y,
+			dct_trans(residual_block, position[i].left_top_x, position[i].left_top_y, position[i].right_bottom_x, position[i].right_bottom_y, h, w);			
+			quantization(position[i].left_top_x, position[i].left_top_y,
 						 position[i].right_bottom_x, position[i].right_bottom_y, residual_block, para);
 			Reverse_quantization(position[i].left_top_x, position[i].left_top_y,
 								 position[i].right_bottom_x, position[i].right_bottom_y, residual_block, para);
 			reverse_dct_trans(residual_block, position[i].left_top_x, position[i].left_top_y, position[i].right_bottom_x, position[i].right_bottom_y, h, w);
 			Pattern::inter_predict_reverse(block, residual_block, position[i].left_top_x, position[i].left_top_y,
-										   position[i].right_bottom_x, position[i].right_bottom_y, frame_pool, block_buffer_pool, inter_mv, para);
+										   position[i].right_bottom_x, position[i].right_bottom_y, frame_pool,whole_frame, inter_mv, para);
 	
 			min_value8 +=inter_value8;
 	
@@ -201,7 +206,7 @@ vector<mini_block> cal_best_predict_8(Block block,ResidualBlock r_block,BlockBuf
 			** 对这个小模块完成整个的帧内编解码过程
 			*/
 			Pattern::predict(block, residual_block, position[i].left_top_x, position[i].left_top_y,
-							 position[i].right_bottom_x, position[i].right_bottom_y, block_buffer_pool, pos8, para);
+							 position[i].right_bottom_x, position[i].right_bottom_y, whole_frame, pos8, para);
 			dct_trans(residual_block, position[i].left_top_x, position[i].left_top_y, position[i].right_bottom_x, position[i].right_bottom_y, h, w);
 			quantization(position[i].left_top_x, position[i].left_top_y,
 						 position[i].right_bottom_x, position[i].right_bottom_y, residual_block, para);
@@ -209,13 +214,13 @@ vector<mini_block> cal_best_predict_8(Block block,ResidualBlock r_block,BlockBuf
 								 position[i].right_bottom_x, position[i].right_bottom_y, residual_block, para);
 			reverse_dct_trans(residual_block, position[i].left_top_x, position[i].left_top_y, position[i].right_bottom_x, position[i].right_bottom_y, h, w);
 			Pattern::de_predict(block, residual_block, position[i].left_top_x, position[i].left_top_y,
-								position[i].right_bottom_x, position[i].right_bottom_y, block_buffer_pool, pos8, para);
+								position[i].right_bottom_x, position[i].right_bottom_y, whole_frame, pos8, para);
 
 			min_value8 +=intra_value8;
 		}
 	}
-	best_value_8=min_value8；
-	return vec_8_8；
+	best_value_8=min_value8;
+	return vec_8_8;
 }
 
 
@@ -225,13 +230,14 @@ vector<mini_block> cal_best_predict_8(Block block,ResidualBlock r_block,BlockBuf
 ** mini_blk 编码宏块存储信息
 ** block 输入的宏块用于计算残差
 ** residual_block 输出的残差模块 
-** whole_frame 帧内预测用到的缓冲池
-** FrameBufferPool 帧间预测用到的缓冲池
 ** para  系统设定的编码参数
+** block_buffer_pool 帧内预测用到的缓冲池
+** frame_pool帧间预测用到的缓冲池
+** position 保存8*8或者4*4（UV）划分坐标
 ** 董辰辰
 */
 
-int encode_16_slice(mini_block &mini_blk,Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,vector<pos> &position)
+int encode_16_slice(mini_block &mini_blk,Block& block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,vector<pos> &position)
 {
 	residual_block.child_block.push_back(mini_blk);    //将模块的信息存储在节点里
 
@@ -270,13 +276,14 @@ int encode_16_slice(mini_block &mini_blk,Block & block,ResidualBlock & residual_
 ** vec_8_8 编码的4个宏块存储信息
 ** block 输入的宏块用于计算残差
 ** residual_block 输出的残差模块 
-** whole_frame 帧内预测用到的缓冲池
-** FrameBufferPool 帧间预测用到的缓冲池
 ** para  系统设定的编码参数
+** block_buffer_pool 帧内预测用到的缓冲池
+** frame_pool帧间预测用到的缓冲池
+** position 保存8*8或者4*4（UV）划分坐标
 ** 董辰辰
 */
 
-int encode_8_slice(vector<mini_block> &vec_8_8,Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool，vector<pos> &position)
+int encode_8_slice(vector<mini_block> &vec_8_8,Block& block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,vector<pos> &position)
 {
 	ResidualBlock temp;   //对于模块划分
 	residual_block.child_block = vec_8_8;
@@ -345,11 +352,11 @@ int encode_8_slice(vector<mini_block> &vec_8_8,Block & block,ResidualBlock & res
 ** residual_block 输出的残差模块
 ** para  系统设定的编码参数
 ** block_buffer_pool 帧内预测用到的缓冲池
-** FrameBufferPool 帧间预测用到的缓冲池
+** frame_pool 帧间预测用到的缓冲池
 ** 董辰辰
 */
 
-inline int encode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
+int encode_one_block(Block & block,ResidualBlock & residual_block,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
 
 	Block save_block=block;  				//保存block 防止在进行反预测的时候对block值进行改变
 	residual_block.block_id = block.block_id;

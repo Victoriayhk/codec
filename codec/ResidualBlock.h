@@ -3,6 +3,7 @@
 #include <vector>
 #include <stdint.h>
 #include "def.h"
+//#include "Pattern.h"
 class Tree;
 /*
 * 李春尧
@@ -129,13 +130,15 @@ public:
 ** 董辰辰
 ** 被树结构代替，已废弃
 */
-
+/*
 struct mini_block
 {
 	bool predit_type;     //帧内还是帧间，0帧内，1帧间
 	int intra_type;       //如果是帧内的预测就记录其预测模式
 	InterMV inter_node;   //如果是帧间的预测就记录其运动矢量和参考帧
 };
+*/
+
 
 
 /**
@@ -155,11 +158,12 @@ public:
 	** 董辰辰
 	** 树形划分中未使用
 	*/
-	int type_slice;  //划分的类型0代表16*16划分，1代表划分成8*8
-
-	vector<mini_block> child_block; //保存每种划分方式的子块的信息，16*16划分就只有一个元素，8*8划分有四个元素
 
 
+	  int type_slice;  //划分的类型0代表16*16划分，1代表划分成8*8
+//    vector<mini_block> child_block; //保存每种划分方式的子块的信息，16*16划分就只有一个元素，8*8划分有四个元素
+
+	vector<int> node;
 	std::vector<int16_t> data;
 	bool is_tree;
 	/**
