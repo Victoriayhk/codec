@@ -87,7 +87,7 @@ public:
 
 
 	static int16_t interpolate(BlockBufferPool & b_pool, int i, int j, double i_p, double j_p);
-	static int calc_SAD_inter(const Block &block, int start_r, int start_c, int end_r, int end_c, int r_i, int r_j, int block_w, int i_offset, int j_offset, BlockBufferPool & bpool);
+	static int calc_SSD_inter(const Block &block, int start_r, int start_c, int end_r, int end_c, int r_i, int r_j, int block_w, int i_offset, int j_offset, BlockBufferPool & bpool);
 	static void predict_inter_sub(const Block &block,ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c, int r_i, int r_j, int block_w, int i_offset, int j_offset, BlockBufferPool & bpool);
 	static int inter_predict(Block& block, ResidualBlock &r_block, int start_r, int start_c, int end_r, int end_c, FrameBufferPool &f_pool, InterMV &inter_mv, AVFormat &para, int diff_threshold,int,int);
 	

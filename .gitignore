@@ -14,7 +14,9 @@ INFO.TXT
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# MAC文件
 .DS_Store
+.xcodeproj
 
 # Build results
 [Dd]ebug/
