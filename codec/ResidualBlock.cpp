@@ -40,6 +40,10 @@ ResidualBlock::ResidualBlock(const Block & block):tree(0,0,0,0),curr_node(0),dat
 	//tree = tree(0,0,height,width);
 }
 
+/**
+* 获取一个新Node
+* 李春尧
+*/
 Node & ResidualBlock::get_node(int &id){
 	id = curr_node;
 	return node_list[curr_node++];
@@ -389,6 +393,7 @@ int ResidualBlock::from_stream(unsigned char *stream, int block_size,AVFormat &p
 /*
 * 将ResidualBlock的分块和模式信息写入流
 * 流stream需要预先开辟空间
+* 李春尧
 */
 int ResidualBlock::head_to_stream(unsigned char *stream,AVFormat &para){
 	unsigned char *p = stream;
@@ -424,6 +429,7 @@ int ResidualBlock::head_to_stream(unsigned char *stream,AVFormat &para){
 /*
 * 将ResidualBlock的分块和模式信息从流读入
 * 流stream需要预先开辟空间
+* 李春尧
 */
 int ResidualBlock::head_from_stream(unsigned char *stream, AVFormat &para){
 	unsigned char *p = stream;
@@ -526,6 +532,7 @@ int PKT::init(AVFormat& para){
 /*
 * 将PKT写入流
 * 流stream需要预先开辟空间
+* 废弃
 */
 
 int PKT::to_stream(unsigned char *stream, AVFormat &para) {
@@ -547,6 +554,7 @@ int PKT::to_stream(unsigned char *stream, AVFormat &para) {
 
 /*
 * 从流中还原出PKT
+* 废弃
 */
 int PKT::from_stream(unsigned char *stream, AVFormat &para) {
 	unsigned char *p = stream;

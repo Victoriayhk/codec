@@ -19,7 +19,7 @@ inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tre
 
 
 /**
-*  构建一棵分块树
+*  构建一棵分块树，如果在缓存中存在，直接使用
 *  李春尧
 */
 int dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,Tree ** tree,int tph,int tpw,int brh,int brw,Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para,int i_offset,int j_offset,int thread_hold){
@@ -41,7 +41,7 @@ int dp_encode_one_block_get_tree(Block & block, ResidualBlock & residual_block,T
 }
 
 /**
-*  编码并解码一个小块
+*  编码并解码一个小块，输入原始数据，输出残差数据以及报解码数据保存在池里
 *  李春尧
 */
 int encode_and_decode_with_tree(Block & block, ResidualBlock & residual_block,Tree & tree, Block & block_buffer,ResidualBlock & residual_block_buffer,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool,AVFormat &para,int i_offset,int j_offset){
@@ -148,7 +148,7 @@ inline int dp_encode_one_block(Block & block, ResidualBlock & residual_block,Tre
 
 }
 /**
-*  并行编码一个宏块
+*  编码一个宏块
 *  李春尧
 */
 inline int tree_encode_one_block(Block & block,ResidualBlock & residual_block,Block & block_buffer,ResidualBlock & residual_block_buffer,AVFormat &para,BlockBufferPool & block_buffer_pool, FrameBufferPool & frame_pool){
@@ -175,7 +175,7 @@ inline int tree_encode_one_block(Block & block,ResidualBlock & residual_block,Bl
 
 
 /**
-*  并行编码一个分量
+*  编码一个分量,即编码每一个块
 *  李春尧
 */
 inline int tree_encode_one_component(vector<Block> & blocks, std::vector<ResidualBlock> & residual_blocks,Block & block_buffer,ResidualBlock & residual_block_buffer,AVFormat &para,FrameBufferPool & frame_pool){

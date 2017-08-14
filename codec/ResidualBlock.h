@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include "def.h"
 class Tree;
+/*
+* 李春尧
+*/
 class Node{
 	public:
 	/**
@@ -56,12 +59,15 @@ class Node{
 
 
 
+/** 
+* 李春尧
+*/
 class Tree{
-
 	void deserialize(unsigned char * stream,int &byte,int &bit,Node * node_list,int &idx,int block_id,int type);
 	void serialize(unsigned char * stream,int &byte,int &bit,int * used_node_ids,int &idx);
 public:
-	/**
+	
+    /**
 	* 子块数据
 	*/
 	uint32_t node_id;
@@ -151,7 +157,9 @@ public:
 
 	Node node_list[1024];
 
-
+    /**
+    * 流化使用
+    */
 	int used_node_ids[1024];
 	
 	unsigned char tree_buff[1024];
@@ -187,6 +195,7 @@ public:
 
 	int clear();
 };
+
 
 class PKT
 {
