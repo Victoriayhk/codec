@@ -30,6 +30,7 @@ using namespace std;
 
 unsigned int* s_len; 
 
+// Z扫描使用的数组
 int zag_zig_4_4[16][2] = {
 	{3,3},{3,2},{2,3},{1,3},
 	{2,2},{3,1},{3,0},{2,1},
@@ -1084,10 +1085,16 @@ int huffman_decode_memory(const unsigned char *bufin,
 	return 0;
 }
 
+/* 
+* 块级流化处理
+* 输入：
+* f_x f_y l_x l_y	残差的左上角及右下角坐标
+* rBlock			残差块
+* para				配置文件
+* stream			返回编码后的流
+*/
 int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t **stream)
 {
-	//int b_size = (l_x-f_x + 1) * (l_y-f_y + 1)/2;
-	//int sign_size = (b_size + 7)*0.125;
 	int bit_num = 9;
 	int b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
 	int sign_size = (b_size + 7) >>3;
@@ -1104,13 +1111,13 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	{
 		quantization_num = para.quantizationV;
 	}
-	//if(quantization_num>79)
+	//if(quantization_num>79)	//4bit流流化，未弃用
 	//{
 	//	bit_num = 4;
 	//	b_size = (l_x-f_x + 1) * (l_y-f_y + 1) /2;
 	//	sign_size = (b_size) * 0.125;
 	//}
-	if(quantization_num>EIGHT_BIT_MODE)
+	if(quantization_num>EIGHT_BIT_MODE)	//8bit流流化，默认为9bit流化
 	{
 		bit_num = 8;
 		b_size = (l_x-f_x + 1) * (l_y-f_y + 1);
@@ -1119,44 +1126,18 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 
 	uint8_t * tmp_stream = nullptr;
 	uint8_t* out_stream = nullptr;
-		//= (uint8_t*)malloc(1000000);
-	//static uint8_t * tmp_stream = nullptr;
-	//if(tmp_stream == nullptr)
-	//{
-	//	tmp_stream = (uint8_t*)malloc(b_size + sign_size);
-	//}
-
-	//entropy_to_stream(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream);
+	
 	entropy_to_stream_bit(f_x,f_y,l_x,l_y,rBlock, para, &tmp_stream,bit_num);
 
 	uint8_t *p = tmp_stream;
-	//cout<<endl;
-	//for(int i = 0;i<b_size + sign_size;++i)
-	//{
-	//	cout<<(int)(*p)<<" ";
-	//	++p;
-	//}
-	//cout<<endl;
-
-	//free(tmp_stream);
 
 	unsigned int out_length;
 	
 	int buff_length = huffman_encode_memory(tmp_stream, (b_size + sign_size) * sizeof(uint8_t), &out_stream, &out_length);
 
-	//for(int i = 0;i<out_length;++i)
-	//{
-	//	cout<<(int)tmp_stream[i]<<" ";
-	//}
-	//cout<<endl;
-
-	//free(tmp_stream);
-
 	*stream = (uint8_t *)malloc(sizeof(unsigned int));
 	uint8_t *point = *stream;
-	//sprintf((char *)point, "%x", out_length);
 	toch4(out_length,point);
-	//point += sizeof(unsigned int);
 
 	*stream = (uint8_t *)realloc(*stream,sizeof(unsigned int) + out_length * sizeof(uint8_t));
 	point = *stream + sizeof(unsigned int);
@@ -1168,6 +1149,13 @@ int entropy_encode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 	return out_length + sizeof(unsigned int);
 }
 
+/* 
+* 将残差数据取负
+* 输入：
+* f_x f_y l_x l_y	残差的左上角及右下角坐标
+* rBlock			残差块
+* width				残差块宽度
+*/
 void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlock, int width)
 {
 	int y = num / (l_x - f_x + 1);
@@ -1178,6 +1166,15 @@ void reverse_data(int f_x, int f_y, int l_x, int l_y,int num,ResidualBlock& rBlo
 	rBlock.data[x+ y*width] = -rBlock.data[x+ y*width];
 }
 
+/*
+* 将流反熵编码并将数据保存在输入的残差block中
+* 输入：
+* f_x f_y l_x l_y	残差的左上角及右下角坐标
+* rBlock			残差块
+* para				配置文件
+* stream			返回编码后的流
+* buff_length		流长度
+*/
 int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock, AVFormat& para, uint8_t *stream, int buff_length)
 {
 	int bit_num = 9;
@@ -1195,24 +1192,19 @@ int entropy_decode_block(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlo
 		quantization_num = para.quantizationV;
 	}
 	
-	//if(quantization_num>79)
+	//if(quantization_num>79)	//4bit流流化，未弃用
 	//{
 	//	bit_num = 4;
 	//}
-	if(quantization_num>EIGHT_BIT_MODE)
+	if(quantization_num>EIGHT_BIT_MODE)	//8bit流流化，默认为9bit流化
 	{
 		bit_num = 8;
 	}
 	
-
-	//uint8_t* p = sign_flag;
 	unsigned int out_length;
 	uint8_t* out_tmp = nullptr;
 
 	huffman_decode_memory(stream,buff_length,&out_tmp,&out_length);
-	//entropy_from_stream(f_x,f_y,l_x,l_y,rBlock,para,out_tmp);
-
-	
 
 	entropy_from_stream_bit(f_x,f_y,l_x,l_y,rBlock,para,out_tmp,bit_num);
 
@@ -1253,22 +1245,18 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 		for(int j =f_x;j<l_x + 1;++j)
 		{
 			int temp = rBlock.data[TABLE[i][width] + j];
-			if(temp>=0)
+			if(temp>=0)	//符号位流化
 			{
-				//bitset<1> sign(positive);
 				sign_group = sign_group<<1;
-				//*sign_flag++ = (uint8_t)positive;
 			}
 			else
 			{
-				//bitset<1> sign(negative);
 				sign_group = sign_group<<1;
 				sign_group |= 0x01;
-				//*sign_flag++ = (uint8_t)negative;
 				temp = -rBlock.data[TABLE[i][width] + j];
 			}
 			++sign_num;
-			if(sign_num>=8)
+			if(sign_num>=8)	//符号位满8位进行写入
 			{
 				sign_num = 0;
 				*sign_flag++ = sign_group;
@@ -1276,13 +1264,9 @@ int entropy_to_stream(int f_x, int f_y, int l_x, int l_y, ResidualBlock& rBlock,
 			}
 
 			*num_flag++ = temp;
-
-			//sign_flag++;
-			//num_flag++;
-			//p++;
 		}
 	}
-	if(sign_num!=0)
+	if(sign_num!=0)		//符号位未全部写入时
 	{
 		*sign_flag = sign_group;
 		sign_num = sign_num<<(8-sign_num);
